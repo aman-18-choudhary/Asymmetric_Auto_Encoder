@@ -54,3 +54,33 @@ def test_invalid_values_rejected(raw):
 
 def test_defaults_valid():
     ExperimentConfig().validate()
+
+
+def test_model_and_train_sections_and_split_seed():
+    cfg = config_from_dict(
+        {
+            "data": {"split_seed": 4},
+            "model": {"latent_dim": 16, "channels": [8, 16]},
+            "train": {"epochs": 2, "lr": 0.01},
+        }
+    )
+    assert cfg.data.split_seed == 4 and cfg.model.channels == [8, 16] and cfg.train.epochs == 2
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        {"model": {"latent_dim": 0}},
+        {"model": {"channels": []}},
+        {"train": {"lr": 0}},
+        {"model": {"depth": 3}},
+    ],
+)
+def test_invalid_model_train_rejected(raw):
+    with pytest.raises(ValueError):
+        config_from_dict(raw)
+
+
+@pytest.mark.parametrize("name", ["baseline.yaml", "mnist_debug.yaml"])
+def test_shipped_configs_load(name):
+    load_config(BASE.parent / name)
