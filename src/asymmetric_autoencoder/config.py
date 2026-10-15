@@ -41,14 +41,35 @@ class DataConfig:
 
 @dataclass
 class ModelConfig:
+    type: str = "baseline"  # baseline | asymmetric
     latent_dim: int = 64
-    channels: list[int] = field(default_factory=lambda: [32, 64, 128])
+    channels: list[int] = field(default_factory=lambda: [32, 64, 128])  # baseline only
+    # asymmetric-only options
+    enc_channels: list[int] = field(default_factory=lambda: [64, 128, 256, 256])
+    dec_channels: list[int] = field(default_factory=lambda: [32, 32, 16, 16])
+    refine_steps: int = 0
+    multiscale: bool = True
+    scale_weights: list[float] | None = None  # lowest -> highest resolution; None = default
+    latent_norm: bool = False
 
     def validate(self) -> None:
         if self.latent_dim <= 0:
             raise ValueError("model.latent_dim must be positive")
         if not self.channels or any(c <= 0 for c in self.channels):
             raise ValueError("model.channels must be a non-empty list of positive ints")
+        if self.type not in ("baseline", "asymmetric"):
+            raise ValueError(f"model.type must be 'baseline' or 'asymmetric', got {self.type!r}")
+        if self.type == "asymmetric":
+            if len(self.enc_channels) < 2 or any(c <= 0 for c in self.enc_channels):
+                raise ValueError("model.enc_channels needs >= 2 positive ints")
+            if len(self.dec_channels) != len(self.enc_channels):
+                raise ValueError("model.dec_channels must match model.enc_channels in length")
+            if self.refine_steps < 0:
+                raise ValueError("model.refine_steps must be >= 0")
+            if self.scale_weights is not None:
+                n = len(self.enc_channels) - 1 if self.multiscale else 1
+                if len(self.scale_weights) != n:
+                    raise ValueError(f"model.scale_weights needs {n} entries")
 
 
 @dataclass

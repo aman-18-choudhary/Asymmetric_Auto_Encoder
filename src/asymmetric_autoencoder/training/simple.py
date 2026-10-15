@@ -13,6 +13,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from asymmetric_autoencoder.models.losses import model_loss
 from asymmetric_autoencoder.utils.logging import get_logger
 
 log = get_logger(__name__)
@@ -47,7 +48,11 @@ def train_reconstruction(
     lr: float,
     max_batches: int | None = None,
 ) -> list[float]:
-    """Train with Adam + MSE against the input; return mean training loss per epoch."""
+    """Train with Adam on ``model_loss``; return mean training loss per epoch.
+
+    The history is the model's own objective (plain MSE for the baseline, weighted multiscale
+    MSE for the asymmetric model), so it is not comparable across models; use ``evaluate_mse``.
+    """
     model.to(device).train()
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     history: list[float] = []
@@ -57,7 +62,7 @@ def train_reconstruction(
             if max_batches is not None and i >= max_batches:
                 break
             x = _images(batch).to(device)
-            loss = F.mse_loss(model(x), x)
+            loss = model_loss(model, x)
             opt.zero_grad(set_to_none=True)
             loss.backward()
             opt.step()
