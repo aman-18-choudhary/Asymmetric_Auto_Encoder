@@ -15,12 +15,19 @@ from asymmetric_autoencoder.utils.reproducibility import (
 )
 
 
+def _positive_int(value: str) -> int:
+    number = int(value)
+    if number <= 0:
+        raise argparse.ArgumentTypeError(f"must be a positive integer, got {value}")
+    return number
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/mnist_debug.yaml")
-    parser.add_argument("--epochs", type=int, default=None, help="override train.epochs")
+    parser.add_argument("--epochs", type=_positive_int, default=None, help="override train.epochs")
     parser.add_argument(
-        "--max-batches", type=int, default=None, help="cap batches per epoch"
+        "--max-batches", type=_positive_int, default=None, help="cap batches per epoch"
     )
     args = parser.parse_args()
 
@@ -39,7 +46,7 @@ def main() -> None:
         splits.train, cfg.data.batch_size, True, cfg.seed, cfg.data.num_workers
     )
     val_loader = make_loader(splits.val, cfg.data.batch_size, False, cfg.seed, cfg.data.num_workers)
-    epochs = args.epochs or cfg.train.epochs
+    epochs = cfg.train.epochs if args.epochs is None else args.epochs
     history = train_reconstruction(
         model, train_loader, device, epochs, cfg.train.lr, args.max_batches
     )
