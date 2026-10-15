@@ -1,0 +1,36 @@
+# Environments
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+build/
+dist/
+
+# Data and artifacts (never tracked; see README for download instructions)
+data/*
+!data/.gitkeep
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+runs/
+wandb/
+experiments/results/**/checkpoints/
+
+# Notebooks / OS / editors
+.ipynb_checkpoints/
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets
+.env
+*.pem
+*.key
