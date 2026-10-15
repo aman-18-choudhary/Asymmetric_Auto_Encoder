@@ -79,3 +79,30 @@ def environment_info() -> dict[str, str]:
         "cuda_available": str(torch.cuda.is_available()),
         "mps_available": str(torch.backends.mps.is_available()),
     }
+
+
+def get_rng_state() -> dict:
+    """Snapshot all RNG states in a form accepted by ``torch.load(weights_only=True)``."""
+    np_state = np.random.get_state()
+    state = {
+        "python": random.getstate(),
+        "numpy": (np_state[0], torch.from_numpy(np_state[1].copy()), *np_state[2:]),
+        "torch": torch.get_rng_state(),
+    }
+    if torch.cuda.is_available():
+        state["cuda"] = torch.cuda.get_rng_state_all()
+    if torch.backends.mps.is_available():
+        state["mps"] = torch.mps.get_rng_state()
+    return state
+
+
+def set_rng_state(state: dict) -> None:
+    """Restore a snapshot from :func:`get_rng_state` (accelerator states only if present)."""
+    random.setstate((state["python"][0], tuple(state["python"][1]), state["python"][2]))
+    name, keys, pos, has_gauss, cached = state["numpy"]
+    np.random.set_state((name, keys.cpu().numpy().astype(np.uint32), pos, has_gauss, cached))
+    torch.set_rng_state(state["torch"].cpu())
+    if "cuda" in state and torch.cuda.is_available():
+        torch.cuda.set_rng_state_all([s.cpu() for s in state["cuda"]])
+    if "mps" in state and torch.backends.mps.is_available():
+        torch.mps.set_rng_state(state["mps"].cpu())

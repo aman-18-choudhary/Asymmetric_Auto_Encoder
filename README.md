@@ -4,8 +4,8 @@ A controlled study of whether an asymmetric autoencoder (heavy nonlinear encoder
 bottleneck, lightweight multiscale decoder) learns more compact and noise-robust representations
 than a conventional symmetric convolutional autoencoder under matched training conditions.
 
-> **Status: Phase 3 (asymmetric architecture implemented, not yet evaluated).** Both models exist
-> and run; no comparison experiments have been performed, so no performance claim is made.
+> **Status: Phase 4 (shared training infrastructure).** Both models exist and train through one
+> pipeline; no comparison experiments have been performed, so no performance claim is made.
 > The architecture and hypotheses are *proposals*; see
 > [`docs/phase_reports/phase_00_research_blueprint.md`](docs/phase_reports/phase_00_research_blueprint.md).
 
@@ -36,20 +36,37 @@ train/validation split is deterministic and depends only on `data.split_seed` (d
 models share it: CIFAR-10 gives 45,000 train / 5,000 val, and the official 10,000 test images are
 kept for final reporting only. Labels are never used for training.
 
-## Debug runs (baseline or asymmetric, set by the config)
+## Training
+
+One script and one `Trainer` serve both models; the model is chosen by `model.type` in the config.
 
 ```bash
-python scripts/train_debug.py --config configs/mnist_debug.yaml   # ~30 s on Apple M2 (MPS)
-python scripts/train_debug.py --config configs/baseline.yaml --epochs 1 --max-batches 50
+python scripts/train.py --config configs/mnist_debug.yaml                  # fast debug (baseline)
+python scripts/train.py --config configs/baseline.yaml  --seed 0           # Model A, CIFAR-10
+python scripts/train.py --config configs/asymmetric.yaml --seed 0          # Model B, CIFAR-10
+python scripts/train.py --config configs/asymmetric.yaml --resume          # continue an interrupted run
 ```
 
-The same script runs Model B with `--config configs/asymmetric.yaml` (set `model.type`).
-Asymmetric options: `enc_channels`, `dec_channels`, `refine_steps` (shared-weight refinement),
-`multiscale`, `scale_weights`, `latent_norm`. Architecture details are in
-`src/asymmetric_autoencoder/models/asymmetric_autoencoder.py`.
+Useful flags: `--epochs N`, `--max-batches N` (debugging only), `--run-dir PATH`, `--seed S`.
+Each run writes to `experiments/results/<experiment_name>_seed<seed>/` (override with `--run-dir`):
 
-These are debugging runs, not reported experiments. `configs/baseline.yaml` is the CIFAR-10
-configuration for the later full experiments (Phase 5).
+| File | Content |
+|---|---|
+| `config.yaml`, `environment.json` | exact configuration and library/device versions |
+| `history.json` | per-epoch `train_loss`, `val_loss`, `val_mse`, `lr`, `seconds` |
+| `summary.json` | best epoch, best `val_mse`, parameters, device, early-stop flag |
+| `checkpoints/last.pt`, `best.pt` | resume state / best-validation weights (git-ignored) |
+
+`val_mse` is the final-resolution MSE against the clean input and is the only loss comparable
+across models; `train_loss`/`val_loss` are each model's own objective (plain MSE for the baseline,
+weighted multiscale MSE for the asymmetric model). Best checkpoint and early stopping use `val_mse`.
+Starting a run in a directory that already has `last.pt` fails unless `--resume` is given.
+Resume restores model, optimizer, scheduler, history and RNG state and reproduces an
+uninterrupted run exactly on the same device (tested on CPU, verified once on MPS).
+
+Training options (`train:` section): `optimizer` (adam|adamw), `weight_decay`, `scheduler`
+(none|cosine), `early_stopping_patience`, `early_stopping_min_delta`, `output_dir`.
+Not implemented: mixed precision, gradient clipping, multi-GPU.
 
 ## Development
 
