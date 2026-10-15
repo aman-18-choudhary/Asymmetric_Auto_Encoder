@@ -5,13 +5,16 @@ Decoder: a mirrored Linear -> reshape -> transposed convolutions, ending in a Si
 lie in [0, 1] like the inputs. Trained with plain MSE.
 
 Interface (to be shared by later models): ``forward(x) -> x_hat``, ``encode(x) -> z``,
-``decode(z) -> x_hat``, attributes ``latent_dim`` and ``in_channels``.
+``decode(z) -> x_hat``, attributes ``latent_dim`` and ``in_channels``. The training objective
+is plain MSE on the final output (``scale_weights`` is None).
 """
 
 from __future__ import annotations
 
 import torch
 from torch import nn
+
+from asymmetric_autoencoder.models.summary import count_parameters  # noqa: F401
 
 
 class ConvAutoencoder(nn.Module):
@@ -31,6 +34,7 @@ class ConvAutoencoder(nn.Module):
         self.in_channels = in_channels
         self.image_size = image_size
         self.latent_dim = latent_dim
+        self.scale_weights = None
         self.channels = tuple(channels)
         self._feat = image_size // factor
         flat = channels[-1] * self._feat * self._feat
@@ -64,8 +68,3 @@ class ConvAutoencoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.decode(self.encode(x))
-
-
-def count_parameters(model: nn.Module) -> int:
-    """Number of trainable parameters."""
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
