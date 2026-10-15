@@ -1,11 +1,12 @@
-"""Short baseline autoencoder run for Phase 2 verification (not a full experiment)."""
+"""Short debugging run of the configured autoencoder (not a full experiment)."""
 
 import argparse
 import json
 
 from asymmetric_autoencoder.config import load_config
 from asymmetric_autoencoder.data.datasets import build_train_val, make_loader
-from asymmetric_autoencoder.models.baseline_autoencoder import ConvAutoencoder, count_parameters
+from asymmetric_autoencoder.models.factory import build_model
+from asymmetric_autoencoder.models.summary import count_parameters
 from asymmetric_autoencoder.training.simple import evaluate_mse, train_reconstruction
 from asymmetric_autoencoder.utils.logging import get_logger, setup_logging
 from asymmetric_autoencoder.utils.reproducibility import (
@@ -32,14 +33,12 @@ def main() -> None:
     args = parser.parse_args()
 
     setup_logging()
-    log = get_logger("train_baseline")
+    log = get_logger("train_debug")
     cfg = load_config(args.config)
     seed_everything(cfg.seed, cfg.deterministic)
     device = resolve_device(cfg.device)
     splits = build_train_val(cfg.data)
-    model = ConvAutoencoder(
-        splits.in_channels, cfg.data.image_size, cfg.model.latent_dim, tuple(cfg.model.channels)
-    )
+    model = build_model(cfg.model, splits.in_channels, cfg.data.image_size)
     log.info("device=%s params=%d env=%s", device, count_parameters(model), environment_info())
 
     train_loader = make_loader(
