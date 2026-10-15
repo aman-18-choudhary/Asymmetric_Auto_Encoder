@@ -24,10 +24,13 @@ class DataConfig:
     batch_size: int = 128
     num_workers: int = 0
     val_fraction: float = 0.1
+    split_seed: int = 0  # fixed independently of the training seed so all models share a split
 
     def validate(self) -> None:
         if self.name not in _DATASETS:
             raise ValueError(f"data.name must be one of {_DATASETS}, got {self.name!r}")
+        if self.split_seed < 0:
+            raise ValueError("data.split_seed must be >= 0")
         if self.image_size <= 0 or self.batch_size <= 0:
             raise ValueError("data.image_size and data.batch_size must be positive")
         if self.num_workers < 0:
@@ -37,12 +40,36 @@ class DataConfig:
 
 
 @dataclass
+class ModelConfig:
+    latent_dim: int = 64
+    channels: list[int] = field(default_factory=lambda: [32, 64, 128])
+
+    def validate(self) -> None:
+        if self.latent_dim <= 0:
+            raise ValueError("model.latent_dim must be positive")
+        if not self.channels or any(c <= 0 for c in self.channels):
+            raise ValueError("model.channels must be a non-empty list of positive ints")
+
+
+@dataclass
+class TrainConfig:
+    epochs: int = 30
+    lr: float = 1e-3
+
+    def validate(self) -> None:
+        if self.epochs <= 0 or self.lr <= 0:
+            raise ValueError("train.epochs and train.lr must be positive")
+
+
+@dataclass
 class ExperimentConfig:
     experiment_name: str = "debug"
     seed: int = 0
     device: str = "auto"
     deterministic: bool = False
     data: DataConfig = field(default_factory=DataConfig)
+    model: ModelConfig = field(default_factory=ModelConfig)
+    train: TrainConfig = field(default_factory=TrainConfig)
 
     def validate(self) -> None:
         if not self.experiment_name:
@@ -52,6 +79,8 @@ class ExperimentConfig:
         if self.device not in _DEVICES:
             raise ValueError(f"device must be one of {_DEVICES}, got {self.device!r}")
         self.data.validate()
+        self.model.validate()
+        self.train.validate()
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -65,8 +94,10 @@ def _build(cls: type, raw: dict[str, Any], path: str) -> Any:
     if unknown:
         raise ValueError(f"Unknown key(s) in {path or 'config'}: {sorted(unknown)}")
     kwargs = dict(raw)
-    if cls is ExperimentConfig and "data" in kwargs:
-        kwargs["data"] = _build(DataConfig, kwargs["data"], "data")
+    if cls is ExperimentConfig:
+        for name, sub in (("data", DataConfig), ("model", ModelConfig), ("train", TrainConfig)):
+            if name in kwargs:
+                kwargs[name] = _build(sub, kwargs[name], name)
     return cls(**kwargs)
 
 
