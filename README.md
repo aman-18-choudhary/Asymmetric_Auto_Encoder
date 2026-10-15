@@ -4,8 +4,8 @@ A controlled study of whether an asymmetric autoencoder (heavy nonlinear encoder
 bottleneck, lightweight multiscale decoder) learns more compact and noise-robust representations
 than a conventional symmetric convolutional autoencoder under matched training conditions.
 
-> **Status: Phase 2 (data pipeline + baseline autoencoder).** Only the baseline model exists;
-> the asymmetric model and full experiments are not implemented yet.
+> **Status: Phase 3 (asymmetric architecture implemented, not yet evaluated).** Both models exist
+> and run; no comparison experiments have been performed, so no performance claim is made.
 > The architecture and hypotheses are *proposals*; see
 > [`docs/phase_reports/phase_00_research_blueprint.md`](docs/phase_reports/phase_00_research_blueprint.md).
 
@@ -36,12 +36,17 @@ train/validation split is deterministic and depends only on `data.split_seed` (d
 models share it: CIFAR-10 gives 45,000 train / 5,000 val, and the official 10,000 test images are
 kept for final reporting only. Labels are never used for training.
 
-## Baseline (Model A) quick run
+## Debug runs (baseline or asymmetric, set by the config)
 
 ```bash
-python scripts/train_baseline.py --config configs/mnist_debug.yaml   # ~30 s on Apple M2 (MPS)
-python scripts/train_baseline.py --config configs/baseline.yaml --epochs 1 --max-batches 50
+python scripts/train_debug.py --config configs/mnist_debug.yaml   # ~30 s on Apple M2 (MPS)
+python scripts/train_debug.py --config configs/baseline.yaml --epochs 1 --max-batches 50
 ```
+
+The same script runs Model B with `--config configs/asymmetric.yaml` (set `model.type`).
+Asymmetric options: `enc_channels`, `dec_channels`, `refine_steps` (shared-weight refinement),
+`multiscale`, `scale_weights`, `latent_norm`. Architecture details are in
+`src/asymmetric_autoencoder/models/asymmetric_autoencoder.py`.
 
 These are debugging runs, not reported experiments. `configs/baseline.yaml` is the CIFAR-10
 configuration for the later full experiments (Phase 5).
