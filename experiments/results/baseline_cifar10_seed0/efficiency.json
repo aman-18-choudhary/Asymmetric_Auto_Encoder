@@ -1,0 +1,94 @@
+{
+  "parameters": 450627,
+  "parameter_breakdown": {
+    "encoder_conv": 93248,
+    "to_latent": 131136,
+    "from_latent": 133120,
+    "decoder_conv": 93123
+  },
+  "latent_dim": 64,
+  "flops": 10846208,
+  "latency": {
+    "cpu_batch1": {
+      "median_ms": 0.21489600476343185,
+      "q1_ms": 0.2064265063381754,
+      "q3_ms": 0.22320850257528946,
+      "per_image_ms": 0.21489600476343185,
+      "batch_size": 1,
+      "device": "cpu"
+    },
+    "cpu_batch128": {
+      "median_ms": 30.057624986511655,
+      "q1_ms": 29.835958004696295,
+      "q3_ms": 30.928437256079633,
+      "per_image_ms": 0.2348251952071223,
+      "batch_size": 128,
+      "device": "cpu"
+    },
+    "mps_batch1": {
+      "median_ms": 0.8233540138462558,
+      "q1_ms": 0.7431870035361499,
+      "q3_ms": 1.307791259023361,
+      "per_image_ms": 0.8233540138462558,
+      "batch_size": 1,
+      "device": "mps"
+    },
+    "mps_batch128": {
+      "median_ms": 3.8519584923051298,
+      "q1_ms": 3.7476150173461065,
+      "q3_ms": 4.024979236419313,
+      "per_image_ms": 0.030093425721133826,
+      "batch_size": 128,
+      "device": "mps"
+    }
+  },
+  "latency_repeat_reverse_order": {
+    "cpu_batch1": {
+      "median_ms": 0.2531249920139089,
+      "q1_ms": 0.2366977496421896,
+      "q3_ms": 0.2737090035225265,
+      "per_image_ms": 0.2531249920139089,
+      "batch_size": 1,
+      "device": "cpu"
+    },
+    "cpu_batch128": {
+      "median_ms": 30.998708491097204,
+      "q1_ms": 30.555604498658795,
+      "q3_ms": 31.484781233302783,
+      "per_image_ms": 0.2421774100866969,
+      "batch_size": 128,
+      "device": "cpu"
+    },
+    "mps_batch1": {
+      "median_ms": 0.8079789986368269,
+      "q1_ms": 0.7485724854632281,
+      "q3_ms": 0.8751357308938168,
+      "per_image_ms": 0.8079789986368269,
+      "batch_size": 1,
+      "device": "mps"
+    },
+    "mps_batch128": {
+      "median_ms": 3.8337914884323254,
+      "q1_ms": 3.740363994438667,
+      "q3_ms": 4.0679579906282015,
+      "per_image_ms": 0.029951496003377542,
+      "batch_size": 128,
+      "device": "mps"
+    }
+  },
+  "size_mb_fp32": 1.7190055847167969,
+  "best_ckpt_mb": 1.7251462936401367,
+  "conditions": {
+    "warmup": 10,
+    "iters": 50,
+    "iters_cpu_batch128": 20,
+    "input": [
+      3,
+      32,
+      32
+    ],
+    "eval_mode": true,
+    "torch": "2.14.1",
+    "threads": 4
+  }
+}

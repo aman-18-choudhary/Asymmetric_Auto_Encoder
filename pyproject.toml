@@ -14,10 +14,11 @@ dependencies = [
     "torchvision>=0.17",
     "numpy>=1.26",
     "pyyaml>=6.0",
+    "matplotlib>=3.8",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.5"]
+dev = ["pytest>=8", "ruff>=0.5", "scikit-image>=0.22"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

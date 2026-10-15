@@ -1,4 +1,5 @@
 # Model A (symmetric conv autoencoder) on CIFAR-10, per the approved blueprint.
+# Training protocol is identical across baseline.yaml / baseline_matched.yaml / asymmetric.yaml.
 experiment_name: baseline_cifar10
 seed: 0
 device: auto
@@ -20,3 +21,6 @@ model:
 train:
   epochs: 30
   lr: 0.001
+  optimizer: adam
+  scheduler: cosine
+  early_stopping_patience: 0   # fixed budget for a fair comparison

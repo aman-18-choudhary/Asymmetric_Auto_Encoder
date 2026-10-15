@@ -1,0 +1,32 @@
+2026-10-15 19:05:17,644 | INFO     | asymmetric_autoencoder.training.trainer | epoch 1/30 train_loss=0.01969 val_mse=0.01087 lr=1.00e-03 *
+2026-10-15 19:05:55,720 | INFO     | asymmetric_autoencoder.training.trainer | epoch 2/30 train_loss=0.00943 val_mse=0.00846 lr=9.97e-04 *
+2026-10-15 19:06:33,713 | INFO     | asymmetric_autoencoder.training.trainer | epoch 3/30 train_loss=0.00810 val_mse=0.00793 lr=9.89e-04 *
+2026-10-15 19:07:11,796 | INFO     | asymmetric_autoencoder.training.trainer | epoch 4/30 train_loss=0.00784 val_mse=0.00777 lr=9.76e-04 *
+2026-10-15 19:07:49,655 | INFO     | asymmetric_autoencoder.training.trainer | epoch 5/30 train_loss=0.00769 val_mse=0.00767 lr=9.57e-04 *
+2026-10-15 19:08:27,745 | INFO     | asymmetric_autoencoder.training.trainer | epoch 6/30 train_loss=0.00759 val_mse=0.00764 lr=9.33e-04 *
+2026-10-15 19:09:06,900 | INFO     | asymmetric_autoencoder.training.trainer | epoch 7/30 train_loss=0.00750 val_mse=0.00763 lr=9.05e-04 *
+2026-10-15 19:09:58,422 | INFO     | asymmetric_autoencoder.training.trainer | epoch 8/30 train_loss=0.00744 val_mse=0.00754 lr=8.72e-04 *
+2026-10-15 19:11:00,587 | INFO     | asymmetric_autoencoder.training.trainer | epoch 9/30 train_loss=0.00736 val_mse=0.00756 lr=8.35e-04
+2026-10-15 19:11:45,473 | INFO     | asymmetric_autoencoder.training.trainer | epoch 10/30 train_loss=0.00732 val_mse=0.00751 lr=7.94e-04 *
+2026-10-15 19:12:23,782 | INFO     | asymmetric_autoencoder.training.trainer | epoch 11/30 train_loss=0.00723 val_mse=0.00751 lr=7.50e-04
+2026-10-15 19:13:01,913 | INFO     | asymmetric_autoencoder.training.trainer | epoch 12/30 train_loss=0.00719 val_mse=0.00750 lr=7.03e-04 *
+2026-10-15 19:13:39,971 | INFO     | asymmetric_autoencoder.training.trainer | epoch 13/30 train_loss=0.00713 val_mse=0.00762 lr=6.55e-04
+2026-10-15 19:14:18,798 | INFO     | asymmetric_autoencoder.training.trainer | epoch 14/30 train_loss=0.00708 val_mse=0.00749 lr=6.04e-04 *
+2026-10-15 19:14:56,928 | INFO     | asymmetric_autoencoder.training.trainer | epoch 15/30 train_loss=0.00702 val_mse=0.00749 lr=5.52e-04
+2026-10-15 19:15:34,931 | INFO     | asymmetric_autoencoder.training.trainer | epoch 16/30 train_loss=0.00698 val_mse=0.00749 lr=5.00e-04
+2026-10-15 19:16:12,958 | INFO     | asymmetric_autoencoder.training.trainer | epoch 17/30 train_loss=0.00693 val_mse=0.00750 lr=4.48e-04
+2026-10-15 19:16:51,085 | INFO     | asymmetric_autoencoder.training.trainer | epoch 18/30 train_loss=0.00688 val_mse=0.00749 lr=3.96e-04
+2026-10-15 19:17:29,215 | INFO     | asymmetric_autoencoder.training.trainer | epoch 19/30 train_loss=0.00683 val_mse=0.00749 lr=3.45e-04
+2026-10-15 19:18:07,284 | INFO     | asymmetric_autoencoder.training.trainer | epoch 20/30 train_loss=0.00679 val_mse=0.00750 lr=2.97e-04
+2026-10-15 19:18:45,625 | INFO     | asymmetric_autoencoder.training.trainer | epoch 21/30 train_loss=0.00675 val_mse=0.00750 lr=2.50e-04
+2026-10-15 19:19:24,287 | INFO     | asymmetric_autoencoder.training.trainer | epoch 22/30 train_loss=0.00671 val_mse=0.00751 lr=2.06e-04
+2026-10-15 19:20:02,340 | INFO     | asymmetric_autoencoder.training.trainer | epoch 23/30 train_loss=0.00668 val_mse=0.00751 lr=1.65e-04
+2026-10-15 19:20:41,064 | INFO     | asymmetric_autoencoder.training.trainer | epoch 24/30 train_loss=0.00665 val_mse=0.00752 lr=1.28e-04
+2026-10-15 19:21:20,048 | INFO     | asymmetric_autoencoder.training.trainer | epoch 25/30 train_loss=0.00662 val_mse=0.00752 lr=9.55e-05
+2026-10-15 19:21:59,712 | INFO     | asymmetric_autoencoder.training.trainer | epoch 26/30 train_loss=0.00660 val_mse=0.00752 lr=6.70e-05
+2026-10-15 19:22:38,630 | INFO     | asymmetric_autoencoder.training.trainer | epoch 27/30 train_loss=0.00658 val_mse=0.00753 lr=4.32e-05
+2026-10-15 19:23:16,816 | INFO     | asymmetric_autoencoder.training.trainer | epoch 28/30 train_loss=0.00656 val_mse=0.00753 lr=2.45e-05
+2026-10-16 01:26:20,459 | INFO     | asymmetric_autoencoder.training.trainer | resumed from experiments/results/baseline_matched_cifar10_seed0/checkpoints/last.pt at epoch 28
+2026-10-16 01:26:55,861 | INFO     | asymmetric_autoencoder.training.trainer | epoch 29/30 train_loss=0.00655 val_mse=0.00753 lr=1.09e-05
+2026-10-16 01:27:30,700 | INFO     | asymmetric_autoencoder.training.trainer | epoch 30/30 train_loss=0.00655 val_mse=0.00753 lr=2.74e-06
+2026-10-16 01:27:30,701 | INFO     | asymmetric_autoencoder.train | run directory: experiments/results/baseline_matched_cifar10_seed0
