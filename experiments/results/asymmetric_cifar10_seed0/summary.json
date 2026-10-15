@@ -1,0 +1,10 @@
+{
+  "epochs_completed": 30,
+  "epochs_configured": 30,
+  "stopped_early": false,
+  "best_epoch": 30,
+  "best_val_mse": 0.007660390333334605,
+  "parameters": 2823625,
+  "device": "mps",
+  "seconds_this_session": 1893.9897636249952
+}

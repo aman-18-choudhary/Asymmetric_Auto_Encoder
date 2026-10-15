@@ -1,0 +1,10 @@
+{
+  "python": "3.11.14",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "torch": "2.14.1",
+  "numpy": "2.4.6",
+  "cuda_available": "False",
+  "mps_available": "True",
+  "device": "mps",
+  "parameters": "2812227"
+}
