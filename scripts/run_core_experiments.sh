@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Phase 5 core experiments: 3 models x 3 seeds, identical protocol, sequential (clean timings).
-# Seed-major order so partial results stay balanced. Finished runs are skipped.
+# Seed-major order so partial results stay balanced. Finished runs are skipped; interrupted runs
+# resume from checkpoints/last.pt. COOLDOWN_SECONDS (default 0) pauses after each trained run.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PY="${PYTHON:-.venv/bin/python}"
@@ -17,6 +18,8 @@ PYEOF
     [ -f "${run}/checkpoints/last.pt" ] && resume="--resume"
     echo "=== ${cfg} seed ${seed} $(date '+%H:%M:%S') ${resume}"
     $PY scripts/train.py --config "configs/${cfg}.yaml" --seed "${seed}" ${resume}
+    echo "--- finished ${run} $(date '+%H:%M:%S'); cooldown ${COOLDOWN_SECONDS:-0}s"
+    sleep "${COOLDOWN_SECONDS:-0}"
   done
 done
 echo "ALL DONE $(date '+%H:%M:%S')"
