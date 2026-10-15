@@ -36,6 +36,8 @@ def main() -> None:
     (results / "core_comparison.json").write_text(json.dumps(agg, indent=2))
 
     s = args.split
+    n = len(args.seeds)
+    note = f"n={n} seed{'s' if n > 1 else ''}"
     columns = [
         ("parameters", "Params", ","),
         ("flops", "FLOPs/img", ","),
@@ -49,14 +51,14 @@ def main() -> None:
         ("latency_mps_batch128_ms", "MPS lat. b=128 (ms)", ".2f"),
     ]
     table = markdown_table(agg, columns)
-    (results / "core_comparison.md").write_text(table + "\n")
+    (results / f"core_comparison_{s}.md").write_text(table + "\n")
     print(table)
 
     fig_dir.mkdir(parents=True, exist_ok=True)
     curves(
         {n: [[h["val_mse"] for h in r["history"]] for r in rs] for n, rs in runs.items()},
         fig_dir / "val_mse_curves.png",
-        "Validation MSE during training (mean +/- std over seeds)",
+        f"Validation MSE during training ({note})",
         "validation MSE (final resolution)",
     )
     for metric, label in (("mse", "MSE"), ("psnr", "PSNR (dB)"), ("ssim", "SSIM")):
@@ -64,7 +66,7 @@ def main() -> None:
         seed_bars(
             {n: agg[n][key]["values"] for n in agg},
             fig_dir / f"{s}_{metric}.png",
-            f"{s.capitalize()} {label}: mean, bars = +/-1 std, dots = seeds",
+            f"{s.capitalize()} {label} ({note}; dots = individual seeds)",
             label,
         )
 

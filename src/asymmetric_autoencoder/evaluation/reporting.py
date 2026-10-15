@@ -68,7 +68,10 @@ def aggregate(runs: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def markdown_table(rows: dict[str, dict[str, Any]], metrics: list[tuple[str, str, str]]) -> str:
-    """``metrics`` = [(aggregate key, column title, format spec)]; scalar keys have no std."""
+    """``metrics`` = [(aggregate key, column title, format spec)].
+
+    Scalar keys have no std; with a single run only the value is shown (no ± term).
+    """
     header = "| Model | " + " | ".join(t for _, t, _ in metrics) + " |"
     sep = "|---|" + "---|" * len(metrics)
     lines = [header, sep]
@@ -79,7 +82,10 @@ def markdown_table(rows: dict[str, dict[str, Any]], metrics: list[tuple[str, str
             if v is None:
                 cells.append("n/a")
             elif isinstance(v, dict):
-                cells.append(f"{v['mean']:{fmt}} ± {v['std']:{fmt}}")
+                if len(v["values"]) < 2:  # a standard deviation from one run would be meaningless
+                    cells.append(f"{v['mean']:{fmt}}")
+                else:
+                    cells.append(f"{v['mean']:{fmt}} ± {v['std']:{fmt}}")
             else:
                 cells.append(f"{v:{fmt}}")
         lines.append(f"| {name} | " + " | ".join(cells) + " |")

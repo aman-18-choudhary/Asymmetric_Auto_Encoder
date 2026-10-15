@@ -57,3 +57,10 @@ def test_missing_run_fails_loudly(tmp_path):
     (tmp_path / "bad_seed0").mkdir()
     with pytest.raises(FileNotFoundError):
         load_run(tmp_path / "bad_seed0")
+
+
+def test_single_seed_table_has_no_plus_minus(tmp_path):
+    _make_run(tmp_path, "m", 0, 0.01)
+    agg = aggregate(collect(tmp_path, "m", [0]))
+    table = markdown_table({"m": agg}, [("test_mse", "MSE", ".3f")])
+    assert "0.010" in table and "±" not in table
