@@ -76,10 +76,26 @@ class ModelConfig:
 class TrainConfig:
     epochs: int = 30
     lr: float = 1e-3
+    optimizer: str = "adam"  # adam | adamw
+    weight_decay: float = 0.0
+    scheduler: str = "none"  # none | cosine (annealed to 0 over `epochs`)
+    early_stopping_patience: int = 0  # epochs without val-MSE improvement; 0 disables
+    early_stopping_min_delta: float = 0.0
+    output_dir: str = (
+        "experiments/results"  # run directory = output_dir/<experiment_name>_seed<seed>
+    )
 
     def validate(self) -> None:
         if self.epochs <= 0 or self.lr <= 0:
             raise ValueError("train.epochs and train.lr must be positive")
+        if self.optimizer not in ("adam", "adamw"):
+            raise ValueError("train.optimizer must be 'adam' or 'adamw'")
+        if self.scheduler not in ("none", "cosine"):
+            raise ValueError("train.scheduler must be 'none' or 'cosine'")
+        if self.weight_decay < 0 or self.early_stopping_min_delta < 0:
+            raise ValueError("train.weight_decay and early_stopping_min_delta must be >= 0")
+        if self.early_stopping_patience < 0:
+            raise ValueError("train.early_stopping_patience must be >= 0")
 
 
 @dataclass

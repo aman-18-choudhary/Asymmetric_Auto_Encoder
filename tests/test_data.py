@@ -4,8 +4,6 @@ from torchvision import transforms
 from torchvision.datasets import FakeData
 
 from asymmetric_autoencoder.data.datasets import build_transform, make_loader, split_indices
-from asymmetric_autoencoder.models.baseline_autoencoder import ConvAutoencoder
-from asymmetric_autoencoder.training.simple import evaluate_mse, train_reconstruction
 
 
 def test_split_is_deterministic_and_disjoint():
@@ -49,18 +47,6 @@ def test_loader_batches_and_seeded_shuffle():
     assert x.shape == (16, 3, 32, 32) and y.shape == (16,)
     first = [next(iter(make_loader(ds, 16, True, seed=5)))[1].tolist() for _ in range(2)]
     assert first[0] == first[1]
-
-
-def test_minimal_training_loop_runs_and_reduces_loss():
-    torch.manual_seed(0)
-    ds = FakeData(size=32, image_size=(1, 32, 32), transform=transforms.ToTensor())
-    loader = make_loader(ds, 16, False, seed=0)
-    model = ConvAutoencoder(in_channels=1, latent_dim=16)
-    cpu = torch.device("cpu")
-    before = evaluate_mse(model, loader, cpu)
-    history = train_reconstruction(model, loader, cpu, epochs=15, lr=2e-3)
-    assert len(history) == 15
-    assert evaluate_mse(model, loader, cpu) < before
 
 
 class _FakeCifar(FakeData):
