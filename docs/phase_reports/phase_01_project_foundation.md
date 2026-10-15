@@ -20,7 +20,7 @@ Package structure; packaging and dependencies; config management; reproducibilit
 - Minimal runtime deps (torch, torchvision, numpy, pyyaml); sklearn/matplotlib deferred until needed.
 - Unknown config keys are errors so typos cannot silently change an experiment.
 - Explicit device requests never fall back silently; `auto` prefers CUDA, then MPS, then CPU.
-- No LICENSE added: the choice is yours (see K).
+- MIT LICENSE added post-review (copyright holder "Aman" as chosen by the user).
 
 ## E. Files Added
 `.gitignore`, `README.md`, `pyproject.toml`, `configs/base.yaml`, `data/.gitkeep`, `src/asymmetric_autoencoder/{__init__,config}.py`, `src/asymmetric_autoencoder/utils/{reproducibility,logging}.py`, subpackage `__init__.py` files, `tests/test_{config,reproducibility,logging,import}.py`, `docs/phase_reports/phase_00_...md` (copied, unmodified), this report.
@@ -59,15 +59,16 @@ None.
 - This report is committed afterwards on the feature branch; final push and remote verification of `develop` and `feature/phase-1-foundation` are stated in the completion message, not here.
 - No force-push, no history rewrite. No pull request opened (no `gh`; open via web UI).
 
+- Post-approval: `docs: ...`/`chore: add MIT license` commit added `LICENSE`; merged into `develop` with `--no-ff` after re-running tests. See the integration record in the Phase 2 report / `git log develop`.
+
 ## J. Issues Encountered
 - Installing torch exceeded the tool timeout; resolved by waiting for completion.
 - One test bug (above), fixed.
 
 ## K. Outstanding Issues
-- LICENSE not chosen (needs your decision).
 - CI workflow (`.github/workflows/tests.yml`) not added; CI installing torch is heavy, deferred.
-- PR for `feature/phase-1-foundation` -> `develop` must be opened/merged by you or after `gh` is installed.
-- `main` contains only `.gitignore` until Phase 1 is merged.
+- No GitHub pull request was opened (no `gh`); integration into `develop` was done by a local `--no-ff` merge, see I.
+- `main` contains only `.gitignore`; promoting `develop` to `main` is deferred.
 - No `requirements.txt` lockfile; versions float within `pyproject` bounds.
 - Python 3.10 and 3.12 untested (only 3.11).
 
@@ -79,7 +80,7 @@ None.
 | Basic tests pass | PASS |
 | Configuration can be loaded | PASS |
 | Random seeds configurable | PASS |
-| Repository clean and documented | PARTIAL (no LICENSE, no CI, PR not merged) |
+| Repository clean and documented | PARTIAL (no CI workflow; no GitHub PR) |
 
 ## M. Next Phase
 Phase 2: dataset pipeline (MNIST/CIFAR-10, fixed split) and the baseline conv autoencoder with a tiny-batch overfit test. Not started.
