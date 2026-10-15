@@ -61,3 +61,66 @@ def test_minimal_training_loop_runs_and_reduces_loss():
     history = train_reconstruction(model, loader, cpu, epochs=15, lr=2e-3)
     assert len(history) == 15
     assert evaluate_mse(model, loader, cpu) < before
+
+
+class _FakeCifar(FakeData):
+    """In-memory stand-in with the torchvision dataset constructor signature."""
+
+    constructed: list[bool] = []
+
+    def __init__(self, root, train, download, transform):
+        _FakeCifar.constructed.append(train)
+        super().__init__(
+            size=200 if train else 40,
+            image_size=(3, 32, 32),
+            transform=transform,
+            random_offset=0 if train else 10_000,
+        )
+
+
+@pytest.fixture
+def fake_registry(monkeypatch):
+    from asymmetric_autoencoder.data import datasets
+
+    monkeypatch.setitem(datasets._REGISTRY, "cifar10", (_FakeCifar, 3))
+    _FakeCifar.constructed = []
+    return datasets
+
+
+def _cfg(**kw):
+    from asymmetric_autoencoder.config import DataConfig
+
+    return DataConfig(name="cifar10", val_fraction=0.1, split_seed=7, **kw)
+
+
+def test_build_train_val_sizes_overlap_and_source(fake_registry):
+    s = fake_registry.build_train_val(_cfg())
+    assert (len(s.train), len(s.val)) == (180, 20)
+    assert set(s.train_indices).isdisjoint(s.val_indices)
+    assert sorted(s.train_indices + s.val_indices) == list(range(200))
+    assert s.in_channels == 3
+    # both subsets index the same underlying (training) dataset
+    assert s.train.dataset is s.val.dataset
+    assert s.train[0][0].shape == (3, 32, 32)
+
+
+def test_build_train_val_is_reproducible(fake_registry):
+    a = fake_registry.build_train_val(_cfg())
+    b = fake_registry.build_train_val(_cfg())
+    assert a.train_indices == b.train_indices and a.val_indices == b.val_indices
+    assert torch.equal(a.val[0][0], b.val[0][0])
+
+
+def test_train_val_does_not_construct_test_set(fake_registry):
+    fake_registry.build_train_val(_cfg())
+    assert _FakeCifar.constructed == [True]
+    test = fake_registry.build_test_set(_cfg())
+    assert _FakeCifar.constructed == [True, False]
+    assert len(test) == 40
+
+
+def test_test_set_images_differ_from_train(fake_registry):
+    s = fake_registry.build_train_val(_cfg())
+    test = fake_registry.build_test_set(_cfg())
+    train_first = torch.stack([s.train[i][0] for i in range(10)])
+    assert not torch.equal(train_first, torch.stack([test[i][0] for i in range(10)]))
