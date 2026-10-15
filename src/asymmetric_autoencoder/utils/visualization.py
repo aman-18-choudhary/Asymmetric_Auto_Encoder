@@ -76,3 +76,26 @@ def _save(fig, path: str | Path) -> None:
     fig.tight_layout()
     fig.savefig(out, dpi=150)
     plt.close(fig)
+
+
+def robustness_curves(
+    levels: list[float],
+    series: dict[str, list[float]],
+    reference: list[float],
+    path: str | Path,
+    title: str,
+    xlabel: str,
+    ylabel: str,
+) -> None:
+    """Metric vs corruption level for each model, with the corrupted input as a reference."""
+    fig, ax = plt.subplots(figsize=(6, 4))
+    # An uncorrupted input hits the PSNR floor (100 dB); leave that point out of the plot.
+    ref = [float("nan") if v >= 90 else v for v in reference]
+    ax.plot(levels, ref, "k--", marker="x", label="corrupted input (no model)")
+    for name, values in series.items():
+        ax.plot(levels, values, marker="o", label=name)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.legend(fontsize=8)
+    _save(fig, path)
