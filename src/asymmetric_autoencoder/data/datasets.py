@@ -52,35 +52,45 @@ def split_indices(n: int, val_fraction: float, seed: int) -> tuple[list[int], li
 
 
 @dataclass
-class DataSplits:
+class TrainValSplits:
     train: Dataset
     val: Dataset
-    test: Dataset
     in_channels: int
     train_indices: list[int]
     val_indices: list[int]
 
 
-def build_splits(cfg: DataConfig, download: bool = False) -> DataSplits:
-    """Create train/val/test datasets. The test set is the official held-out test split.
+def _dataset(cfg: DataConfig, train: bool, download: bool) -> Dataset:
+    cls, _ = _REGISTRY[cfg.name]
+    return cls(
+        root=str(Path(cfg.root)),
+        train=train,
+        download=download,
+        transform=build_transform(cfg.image_size),
+    )
 
+
+def build_train_val(cfg: DataConfig, download: bool = False) -> TrainValSplits:
+    """Create the train/validation datasets from the official training split.
+
+    The test set is never constructed here, so training-only workflows cannot touch it.
     Set ``download=True`` (see ``scripts/download_data.py``) to fetch data; by default nothing
     is downloaded and a missing dataset raises ``RuntimeError``.
     """
-    cls, channels = _REGISTRY[cfg.name]
-    root = Path(cfg.root)
-    tf = build_transform(cfg.image_size)
-    full_train = cls(root=str(root), train=True, download=download, transform=tf)
-    test = cls(root=str(root), train=False, download=download, transform=tf)
+    full_train = _dataset(cfg, train=True, download=download)
     train_idx, val_idx = split_indices(len(full_train), cfg.val_fraction, cfg.split_seed)
-    return DataSplits(
+    return TrainValSplits(
         train=Subset(full_train, train_idx),
         val=Subset(full_train, val_idx),
-        test=test,
-        in_channels=channels,
+        in_channels=num_channels(cfg.name),
         train_indices=train_idx,
         val_indices=val_idx,
     )
+
+
+def build_test_set(cfg: DataConfig, download: bool = False) -> Dataset:
+    """The official held-out test split; call only for final evaluation."""
+    return _dataset(cfg, train=False, download=download)
 
 
 def make_loader(

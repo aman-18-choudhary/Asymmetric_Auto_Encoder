@@ -4,7 +4,7 @@ import argparse
 import json
 
 from asymmetric_autoencoder.config import load_config
-from asymmetric_autoencoder.data.datasets import build_splits, make_loader
+from asymmetric_autoencoder.data.datasets import build_train_val, make_loader
 from asymmetric_autoencoder.models.baseline_autoencoder import ConvAutoencoder, count_parameters
 from asymmetric_autoencoder.training.simple import evaluate_mse, train_reconstruction
 from asymmetric_autoencoder.utils.logging import get_logger, setup_logging
@@ -19,7 +19,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/mnist_debug.yaml")
     parser.add_argument("--epochs", type=int, default=None, help="override train.epochs")
-    parser.add_argument("--max-batches", type=int, default=None, help="cap batches per epoch")
+    parser.add_argument(
+        "--max-batches", type=int, default=None, help="cap batches per epoch"
+    )
     args = parser.parse_args()
 
     setup_logging()
@@ -27,7 +29,7 @@ def main() -> None:
     cfg = load_config(args.config)
     seed_everything(cfg.seed, cfg.deterministic)
     device = resolve_device(cfg.device)
-    splits = build_splits(cfg.data)
+    splits = build_train_val(cfg.data)
     model = ConvAutoencoder(
         splits.in_channels, cfg.data.image_size, cfg.model.latent_dim, tuple(cfg.model.channels)
     )
