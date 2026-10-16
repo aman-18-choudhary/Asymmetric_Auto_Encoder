@@ -94,14 +94,40 @@ def metrics_table(rows: list[dict]) -> None:
     table(rows, "image")
 
 
-def pick_sample(samples, key: str, label: str = "Validation sample") -> int:
+HOW_TO_READ = "Lower is better: MSE, MAE. Higher is better: PSNR (dB), SSIM."
+UNITS = {"psnr": "PSNR (dB)", "ssim": "SSIM"}
+
+
+def line_chart(series: dict, xlabel: str, ylabel: str, logy: bool = False) -> None:
+    """Labelled line chart with deterministic axes; ``series[name] = (x values, y values)``."""
+    fig = Figure(figsize=(6.5, 3.6))
+    ax = fig.subplots()
+    for name, (xs, ys) in series.items():
+        style = (
+            {"color": "k", "linestyle": "--", "marker": "x"}
+            if name == "corrupted input"
+            else {"marker": "o", "markersize": 3}
+        )
+        ax.plot(xs, ys, label=name, **style)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if logy:
+        ax.set_yscale("log")
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    st.pyplot(fig)
+
+
+def pick_sample(samples, key: str, label: str = "Validation sample", default: int = 0) -> int:
     cls = st.selectbox("Class filter", ["all", *samples.class_names], key=f"{key}-cls")
     ids = [
         i
         for i in range(len(samples))
         if cls == "all" or samples.class_names[samples.labels[i]] == cls
     ]
-    n = st.slider(label, 1, len(ids), 1, key=f"{key}-n")
+    start = ids.index(default) + 1 if default in ids else 1  # default applies to "all" only
+    n = st.slider(label, 1, len(ids), start, key=f"{key}-n")
     i = ids[n - 1]
     st.caption(
         f"class: **{samples.class_names[samples.labels[i]]}**, "
@@ -110,7 +136,7 @@ def pick_sample(samples, key: str, label: str = "Validation sample") -> int:
     return i
 
 
-st.title("Asymmetric Auto-Encoder Bottlenecks: interactive demo")
+st.title("Asymmetric Autoencoder Bottlenecks: Interactive Research Demo")
 st.info(
     "**Single-seed evidence.** All research results come from one training run per model (seed 0); "
     "variability across seeds was not measured and no difference is statistically assessed. "
@@ -125,6 +151,10 @@ tab_res, tab_rec, tab_rob, tab_lat = st.tabs(
 with tab_res:
     res = get_results(str(RESULTS))
     st.subheader("Reconstruction, validation split (5,000 images)")
+    st.caption(
+        "Saved results from the research runs (seed 0, Apple M2/MPS); checkpoints were chosen on "
+        f"this split. {HOW_TO_READ}"
+    )
     rows = ds.reconstruction_rows(res, "val")
     if rows:
         table(rows, "model")
@@ -141,7 +171,10 @@ with tab_res:
         if rows:
             table(rows, "model")
     st.subheader("Model size and compute")
-    st.caption("Latency: median forward pass on Apple M2 (CPU threads=4 and MPS), as saved.")
+    st.caption(
+        "Saved measurements on an Apple M2 (CPU with 4 threads, and MPS): median forward-pass "
+        "time. MACs = multiply-accumulates per image (convolutions and linear layers only)."
+    )
     rows = ds.efficiency_rows(res)
     if rows:
         st.dataframe(pd.DataFrame(rows).set_index("model"))
@@ -153,8 +186,11 @@ with tab_res:
     if levels:
         df = pd.DataFrame(series, index=levels)
         df = df.mask(df > 90)  # an uncorrupted input hits the 100 dB PSNR floor
-        st.line_chart(df)
-        st.dataframe(df)
+        xlabel = "Gaussian noise sigma" if kind == "gaussian" else "fraction of pixels corrupted"
+        line_chart(
+            {n: (levels, df[n].tolist()) for n in df}, xlabel, UNITS[metric] + " vs clean image"
+        )
+        st.dataframe(df.rename_axis(xlabel))
     st.subheader("Latent analysis (64-d latents; fit on train, scored on validation)")
     cols = st.columns(2)
     if rows := ds.probe_rows(res):
@@ -167,7 +203,12 @@ with tab_res:
         st.caption(
             "Post-hoc truncation: validation MSE when only k latent principal components are kept"
         )
-        st.line_chart(pd.DataFrame(trunc))
+        line_chart(
+            {n: (sorted(v), [v[k] for k in sorted(v)]) for n, v in trunc.items()},
+            "kept latent principal components k (64 = full latent)",
+            "validation MSE (log scale)",
+            logy=True,
+        )
     st.subheader("Figures")
     for name, caption in ds.FIGURES.items():
         if (FIGURES / name).is_file():
@@ -178,6 +219,12 @@ with tab_rec:
     models = models_or_none()
     samples = samples_or_none()
     if models and samples:
+        st.caption(
+            "**baseline**: small symmetric convolutional autoencoder. **baseline_matched**: the "
+            "same design widened to the asymmetric model's parameter count. **asymmetric**: heavy "
+            "residual encoder with a light multiscale decoder. All three use a 64-dimensional "
+            "latent."
+        )
         i = pick_sample(samples, "rec")
         x = samples.tensor(i)
         recs = ds.reconstruct(models, x)
@@ -187,7 +234,9 @@ with tab_rec:
         for col, name in zip(cols[1:], MODELS, strict=True):
             with col:
                 show(ds.to_display(recs[name], SCALE), name)
-        st.caption("Per-image metrics, live CPU computation against the original image:")
+        st.caption(
+            f"Per-image metrics, live CPU computation against the original image. {HOW_TO_READ}"
+        )
         metrics_table([{"image": n, **ds.image_metrics(r, x)} for n, r in recs.items()])
         outs = ds.multiscale_outputs(models["asymmetric"], x)
         if outs:
@@ -229,7 +278,11 @@ with tab_rob:
         ):
             with col:
                 show(ds.to_display(img, SCALE), cap)
-        st.caption("Scores against the clean image (live CPU):")
+        st.caption(
+            "Scores against the clean image (live CPU). The first row is the noisy image itself, "
+            "i.e. what a model that changed nothing would score; the models are not denoisers. "
+            f"{HOW_TO_READ}"
+        )
         metrics_table(
             [
                 {"image": "corrupted input (no model)", **ds.image_metrics(noisy, clean)},
@@ -250,7 +303,10 @@ with tab_lat:
     if models and samples and pca:
         model_name = st.selectbox("Model", MODELS, index=2, key="lat-model")
         model, asset = models[model_name], pca[model_name]
-        i = pick_sample(samples, "lat")
+        a_default, b_default = ds.default_interpolation_endpoints(samples.labels)
+        i = pick_sample(
+            samples, "lat", "Validation sample (also interpolation endpoint A)", a_default
+        )
         x = samples.tensor(i)
         st.subheader("PCA truncation of the latent (post-hoc)")
         k = st.slider(
@@ -286,13 +342,25 @@ with tab_lat:
         ax.legend(fontsize=6, ncol=2)
         st.pyplot(fig)
         st.subheader("Latent interpolation (exploratory)")
-        j = pick_sample(samples, "lat-b", "Second validation sample")
+        j = pick_sample(samples, "lat-b", "Interpolation endpoint B", b_default)
+        name = samples.class_names
+        st.caption(
+            f"Endpoint A = the sample selected above (**{name[samples.labels[i]]}**); endpoint B = "
+            f"**{name[samples.labels[j]]}**. Each frame decodes the latent mix (1 - alpha) * z_A + "
+            f"alpha * z_B with the **{model_name}** model; alpha = 0 is A's reconstruction and "
+            "alpha = 1 is B's."
+        )
+        if i == j:
+            st.info("Endpoints A and B are the same image, so every frame is identical.")
         alphas = [0.0, 1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6, 1.0]
-        for col, a, img in zip(
-            st.columns(len(alphas)),
-            alphas,
-            ds.interpolate(model, x, samples.tensor(j), alphas),
-            strict=True,
-        ):
+        x_b = samples.tensor(j)
+        ends = st.columns(len(alphas))
+        with ends[0]:
+            show(ds.to_display(x, SCALE), f"A (original): {name[samples.labels[i]]}")
+        with ends[-1]:
+            show(ds.to_display(x_b, SCALE), f"B (original): {name[samples.labels[j]]}")
+        frames = ds.interpolate(model, x, x_b, alphas)
+        for col, a, img in zip(st.columns(len(alphas)), alphas, frames, strict=True):
             with col:
-                show(ds.to_display(img, SCALE), f"{a:.2f}")
+                tag = " (A)" if a == 0 else " (B)" if a == 1 else ""
+                show(ds.to_display(img, SCALE), f"alpha = {a:.2f}{tag}")

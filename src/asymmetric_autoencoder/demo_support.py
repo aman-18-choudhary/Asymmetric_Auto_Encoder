@@ -31,6 +31,12 @@ MODEL_RUNS = {
 SAMPLES_FILE = "val_samples.npz"
 PCA_FILE = "pca_bases.pt"
 SEED = 0  # all research results come from one training run (seed 0) per model
+LATENCY_LABELS = {  # saved latency keys -> table columns (median ms per forward pass)
+    "cpu_batch1": "CPU latency, 1 image (ms)",
+    "cpu_batch128": "CPU latency, batch of 128 (ms)",
+    "mps_batch1": "MPS latency, 1 image (ms)",
+    "mps_batch128": "MPS latency, batch of 128 (ms)",
+}
 
 # Figures the demo may show: metric plots only, never reconstructions of held-out images.
 FIGURES = {
@@ -155,6 +161,22 @@ def truncated_reconstruction(
     return model.decode(truncate(model.encode(x), basis, k))
 
 
+def default_interpolation_endpoints(labels: np.ndarray) -> tuple[int, int]:
+    """Two *different* samples to start the interpolation from, preferring different classes.
+
+    A is the first sample. B is the first sample of the class half a class-list away from A's
+    class (airplane -> dog for CIFAR-10), so the default pair is visually distinct. With a single
+    class it falls back to the second sample. Deterministic; both stay freely adjustable.
+    """
+    if len(labels) < 2:
+        raise ValueError("need at least two samples to interpolate between")
+    classes = sorted({int(c) for c in labels})
+    if len(classes) < 2:
+        return 0, 1
+    target = classes[(classes.index(int(labels[0])) + len(classes) // 2) % len(classes)]
+    return 0, int(np.flatnonzero(labels == target)[0])
+
+
 @torch.no_grad()
 def interpolate(
     model: nn.Module, x_a: torch.Tensor, x_b: torch.Tensor, alphas: list[float]
@@ -211,13 +233,9 @@ def efficiency_rows(res: dict[str, Any]) -> list[dict[str, Any]]:
                 {
                     "model": name,
                     "parameters": e["parameters"],
-                    "FP32 MB": e["size_mb_fp32"],
-                    "MACs/img (M)": e["flops"] / 2e6,
-                    **{
-                        f"{k} ms": lat[k]["median_ms"]
-                        for k in ("cpu_batch1", "cpu_batch128", "mps_batch1", "mps_batch128")
-                        if k in lat
-                    },
+                    "FP32 size (MB)": e["size_mb_fp32"],
+                    "MACs per image (millions)": e["flops"] / 2e6,
+                    **{LATENCY_LABELS[k]: lat[k]["median_ms"] for k in LATENCY_LABELS if k in lat},
                 }
             )
     return rows

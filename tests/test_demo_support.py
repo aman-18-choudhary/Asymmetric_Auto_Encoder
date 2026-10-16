@@ -144,6 +144,109 @@ def test_pca_asset_roundtrip_uses_safe_loading(tmp_path, models):
     assert isinstance(loaded.basis, PCABasis) and loaded.sample_coords.shape == (10, 2)
 
 
+# ---------------------------------------------------------------- interpolation defaults
+def _class_ordered_labels(n_classes=10, per_class=30):
+    return np.repeat(np.arange(n_classes), per_class)  # how the demo sample file is ordered
+
+
+def test_default_endpoints_are_different_images_of_different_classes():
+    labels = _class_ordered_labels()
+    a, b = ds.default_interpolation_endpoints(labels)
+    assert (a, b) == (0, 150)  # first airplane, first dog (class 0 -> class 5)
+    assert a != b and labels[a] != labels[b]
+    assert ds.default_interpolation_endpoints(labels) == (a, b)  # deterministic
+
+
+def test_default_endpoints_with_shuffled_few_and_single_class_labels():
+    rng = np.random.default_rng(0)
+    shuffled = rng.permutation(_class_ordered_labels())
+    a, b = ds.default_interpolation_endpoints(shuffled)
+    assert a != b and shuffled[a] != shuffled[b]
+    assert ds.default_interpolation_endpoints(np.array([3, 3, 7, 7])) == (0, 2)  # two classes
+    assert ds.default_interpolation_endpoints(np.array([2, 2, 2])) == (0, 1)  # one class
+    with pytest.raises(ValueError):
+        ds.default_interpolation_endpoints(np.array([1]))
+
+
+def test_interpolation_frames_are_decoded_from_the_endpoint_latents(models):
+    m, a, b = models["asymmetric"], _x(seed=11), _x(seed=12)
+    alphas = [0.0, 1 / 6, 0.5, 5 / 6, 1.0]
+    frames = ds.interpolate(m, a, b, alphas)
+    assert len(frames) == 5 and all(f.shape == a.shape for f in frames)
+    with torch.no_grad():
+        za, zb = m.encode(a), m.encode(b)
+        for f, al in zip(frames, alphas, strict=True):
+            assert torch.allclose(f, m.decode((1 - al) * za + al * zb), atol=1e-6)
+        assert torch.allclose(frames[0], m(a), atol=1e-5) and torch.allclose(
+            frames[-1], m(b), atol=1e-5
+        )
+    assert not torch.equal(frames[0], frames[-1])  # different endpoints give different frames
+    same = ds.interpolate(m, a, a, alphas)
+    assert all(
+        torch.allclose(f, same[0], atol=1e-6) for f in same
+    )  # identical endpoints -> identical frames
+
+
+def _latent_endpoint_captions(at):
+    import re
+
+    pat = re.compile(r"class: \*\*(\w+)\*\*, training-array index (\d+)")
+    found = [pat.search(c.value) for c in at.caption if pat.search(c.value)]
+    return [(m.group(1), int(m.group(2))) for m in found][-2:]  # Latent tab: endpoint A, then B
+
+
+@pytest.fixture(scope="module")
+def full_app_available():
+    pytest.importorskip("streamlit")
+    needed = [ROOT / "demo" / "assets" / ds.SAMPLES_FILE, ROOT / "demo" / "assets" / ds.PCA_FILE]
+    needed += [ds.checkpoint_path(ROOT / "experiments" / "results", m) for m in ds.MODEL_RUNS]
+    if not all(p.is_file() for p in needed):
+        pytest.skip("local checkpoints / demo assets not present")
+
+
+def test_app_starts_interpolation_from_two_different_validation_images(full_app_available):
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(str(ROOT / "demo" / "app.py"), default_timeout=120).run()
+    assert not at.exception
+    (class_a, idx_a), (class_b, idx_b) = _latent_endpoint_captions(at)
+    assert idx_a != idx_b and class_a != class_b
+    assert any(c.value.startswith("Endpoint A = the sample selected above") for c in at.caption)
+    assert not any("same image" in i.value for i in at.info)
+
+
+def test_app_interpolation_endpoints_are_independently_adjustable(full_app_available):
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(str(ROOT / "demo" / "app.py"), default_timeout=120).run()
+    (_, a0), (_, b0) = _latent_endpoint_captions(at)
+    at.slider(key="lat-b-n").set_value(2).run()  # move only B
+    assert not at.exception
+    (_, a1), (_, b1) = _latent_endpoint_captions(at)
+    assert a1 == a0 and b1 != b0
+    at.slider(key="lat-n").set_value(5).run()  # move only A
+    (_, a2), (_, b2) = _latent_endpoint_captions(at)
+    assert a2 != a1 and b2 == b1
+    # forcing both endpoints onto the same image is allowed and is flagged to the user
+    at.selectbox(key="lat-cls").set_value("airplane").run()
+    at.selectbox(key="lat-b-cls").set_value("airplane").run()
+    at.slider(key="lat-n").set_value(1).run()
+    at.slider(key="lat-b-n").set_value(1).run()
+    assert any("same image" in i.value for i in at.info)
+
+
+def test_efficiency_columns_carry_units(tmp_path):
+    results = ROOT / "experiments" / "results"
+    if not (results / "latent_analysis_val.json").is_file():
+        pytest.skip("saved results not present")
+    row = ds.efficiency_rows(ds.load_saved_results(results))[0]
+    assert "MACs per image (millions)" in row and "FP32 size (MB)" in row
+    assert (
+        all(k.endswith("(ms)") for k in row if "latency" in k)
+        and len([k for k in row if "latency" in k]) == 4
+    )
+
+
 # ---------------------------------------------------------------- saved results
 def test_saved_results_tolerate_missing_files(tmp_path):
     res = ds.load_saved_results(tmp_path)
