@@ -98,6 +98,46 @@ Training options (`train:` section): `optimizer` (adam|adamw), `weight_decay`, `
 (none|cosine), `early_stopping_patience`, `early_stopping_min_delta`, `output_dir`.
 Not implemented: mixed precision, gradient clipping, multi-GPU.
 
+## Interactive demo (local, CPU only)
+
+A Streamlit app for exploring the three trained models and the saved results. It is read-only: it
+never trains, never writes to `experiments/results/` or `reports/figures/`, and never loads the
+official test split (validation images are taken from the five training batches only).
+
+```bash
+pip install -e ".[demo]"                    # adds streamlit and pandas
+python scripts/build_demo_assets.py         # once, inference only (about 30 s)
+streamlit run demo/app.py                   # start from the repository root
+```
+
+**Prerequisites for `scripts/build_demo_assets.py`.** The CIFAR-10 *training* batches must already
+exist locally in `data/cifar-10-batches-py/` (`data_batch_1` ... `data_batch_5` and `batches.meta`), and
+the three checkpoints must exist. The script only reads those files; it never opens `test_batch`
+and does not download anything. Note that the repository's `scripts/download_data.py` fetches the
+dataset through torchvision, whose integrity check also hashes `test_batch` (and downloads files if
+anything is missing). If you want to avoid even that checksum read, obtain the training batches
+yourself instead of running the download script.
+
+**Privacy.** The project-local `.streamlit/config.toml` disables Streamlit's anonymous usage
+statistics. Streamlit reads it when started from the repository root; elsewhere, add
+`--browser.gatherUsageStats false`. The demo is intended for local access only: the same file binds
+the server to `localhost` (when started elsewhere, also pass `--server.address localhost`). Asset
+generation writes only to `demo/assets/` (the path is
+resolved and anything under `experiments/`, `reports/` or `data/`, or outside the project, is
+rejected).
+
+Tabs: **Results** (saved metrics, efficiency, robustness and latent analysis; saved test numbers are
+labelled as the one-time final evaluation), **Reconstruct** (validation samples through all three
+models, with the asymmetric model's multiscale outputs), **Robustness (N1)** (evaluation-only input
+corruption, scored against the clean image) and **Latent** (post-hoc PCA truncation, a 2-D projection
+and interpolation: exploratory visualisations, not evidence of semantic structure).
+
+The checkpoints (`experiments/results/*/checkpoints/best.pt`) and the generated `demo/assets/`
+are git-ignored, so after a fresh clone the Results tab works immediately while the other tabs
+need the trained checkpoints (see the final report for how to reproduce them). All results come from
+one training run per model (seed 0); live numbers are computed on CPU and can differ slightly from the
+saved Apple-MPS results.
+
 ## Development
 
 ```bash
