@@ -47,7 +47,7 @@ Linear probe, validation accuracy (chance 10%, standard error about 0.7 points):
 | baseline_matched (trained) | 64 | 37.5% | 38.4% |
 | asymmetric (trained) | 64 | 37.9% | 38.3% |
 | baseline (random init) | 64 | 32.4% | 33.8% |
-| baseline_matched (random init) | 64 | 33.4% | 34.7% |
+| baseline_matched (random init) | 64 | 33.4% | 34.6% |
 | asymmetric (random init) | 64 | 32.4% | 33.4% |
 
 Latent usage (train split):
@@ -67,7 +67,7 @@ Validation MSE after post-hoc truncation to k principal components:
 Figures: `latent_probe_accuracy.png`, `latent_explained_variance.png`, `latent_truncation_mse.png`, `latent_pca_{baseline,baseline_matched,asymmetric}.png` (validation latents on the first two PCs, coloured by class).
 
 ## I. Interpretation and Hypotheses
-- **H4 (probe quality): not supported.** The three trained latents are indistinguishable (37.5-37.9%, within about one standard error). Training adds about 4-5 points over random-init encoders, but no trained latent beats a plain PCA-64 of the pixels (38.0%); the 3072-d pixels reach 41.2%. The linear probe underfits rather than overfits (train accuracy close to validation).
+- **H4 (probe quality): not supported.** The three trained latents are indistinguishable (37.5-37.9%, within about one standard error). Training adds about 4 to 5.5 points over random-init encoders, but no trained latent beats a plain PCA-64 of the pixels (38.0%); the 3072-d pixels reach 41.2%. The linear probe underfits rather than overfits (train accuracy close to validation).
 - **H5 (collapse): not supported as an advantage; no collapse observed.** No model has low-variance dimensions and each uses roughly half of the 64 dimensions. The asymmetric effective rank (31.3) is slightly above the baseline's (29.3) and below the matched baseline's (37.2). Absolute latent scale (std 5.1 vs 0.4-0.8) is arbitrary and not informative.
 - **H2 (compactness): not tested.** Post-hoc truncation is only a proxy: the asymmetric decoder loses more than the baselines at every k < 64 (e.g. 37% higher MSE at k = 32), i.e. its information is spread over more directions. This does not equal training with a smaller latent dimension.
 - **PCA scatter plots show no visible class structure**; they are illustrative and support no claim about semantic organisation.
