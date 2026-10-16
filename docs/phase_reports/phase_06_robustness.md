@@ -36,7 +36,6 @@ python scripts/robustness_report.py
 - `pytest`: 112 passed; `ruff check` clean.
 - Corruption tests: identity at level 0, determinism, [0,1] range, Gaussian std within 5% of sigma, salt-and-pepper fraction within 1 point of p, channel consistency.
 - At sigma = 0 the robustness evaluation reproduces `eval_val.json` MSE exactly for all three models.
-- Evaluation sampling noise (4 corruption seeds, same models): PSNR std 0.001-0.005 dB, far below the between-model gaps below.
 
 ## H. Results (validation, 5,000 images, seed-0 models, PSNR dB / SSIM)
 
