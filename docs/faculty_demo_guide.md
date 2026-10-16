@@ -15,13 +15,11 @@ inspect the saved evidence and run the trained models live.
 ## 2. Launch (from the repository root)
 
 ```bash
-source .venv/bin/activate
-streamlit run demo/app.py
+scripts/run_demo.sh
 ```
 
-Open **http://localhost:8501** (Streamlit's default port; use `--server.port 8502` if it is taken). Start from the
-repository root: the project file `.streamlit/config.toml` then binds the server to `localhost` only and turns
-off usage statistics. Stop with `Ctrl+C`. First-time setup (once): `pip install -e ".[demo]"` and
+Open **http://localhost:8501** (Streamlit's default port; add `--server.port 8502` to the command if it is taken).
+The launcher binds the server to `localhost` only and turns off usage statistics. Stop with `Ctrl+C`. First-time setup (once): `pip install -e ".[demo]"` and
 `python scripts/build_demo_assets.py` (see Troubleshooting).
 
 **Before the session:** open the app 10 minutes early, click through all four tabs once (the first visit loads the
@@ -182,7 +180,8 @@ established.
 | Tabs show "Checkpoints not available" | The three `best.pt` files are git-ignored and exist only where they were trained: `experiments/results/{baseline,baseline_matched,asymmetric}_cifar10_seed0/checkpoints/best.pt`. Restore them (or retrain, see the report's Reproducibility section). The **Results tab still works** from the committed JSON. |
 | "Validation samples" / "PCA assets" not available | Run `python scripts/build_demo_assets.py` once (about 30 s; needs the checkpoints and the CIFAR-10 *training* batches in `data/cifar-10-batches-py/`). It reads only the five training batches (`data_batch_1`-`5`) and `batches.meta`. Do not use `scripts/download_data.py` if you want to avoid torchvision's integrity check, which also hashes `test_batch`. |
 | `streamlit: command not found` / import errors | Activate `.venv` and run `pip install -e ".[demo]"`. |
-| Port already in use | `streamlit run demo/app.py --server.port 8502`. |
-| Page reachable from other devices or usage statistics enabled | You started from outside the repository root. Start from the root, or add `--server.address localhost --browser.gatherUsageStats false`. |
+| Port already in use | `scripts/run_demo.sh --server.port 8502`. |
+| Page reachable from other devices, or usage statistics enabled | You launched `streamlit run` directly. Use `scripts/run_demo.sh`, or add `--server.address localhost --browser.gatherUsageStats false`. |
+| A public (Streamlit Community Cloud) copy shows only the Results tab | Expected: the checkpoints and `demo/assets/` are git-ignored and are not in the public repository. Use the local demo for the live tabs. |
 | Tables empty at first | Wait a few seconds for the first load; refresh the page. |
 | Reset the app | Stop with `Ctrl+C` and start again. |

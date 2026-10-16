@@ -107,7 +107,7 @@ official test split (validation images are taken from the five training batches 
 ```bash
 pip install -e ".[demo]"                    # adds streamlit and pandas
 python scripts/build_demo_assets.py         # once, inference only (about 30 s)
-streamlit run demo/app.py                   # start from the repository root
+scripts/run_demo.sh                         # localhost only, usage statistics off
 ```
 
 **Prerequisites for `scripts/build_demo_assets.py`.** The CIFAR-10 *training* batches must already
@@ -118,13 +118,21 @@ dataset through torchvision, whose integrity check also hashes `test_batch` (and
 anything is missing). If you want to avoid even that checksum read, obtain the training batches
 yourself instead of running the download script.
 
-**Privacy.** The project-local `.streamlit/config.toml` disables Streamlit's anonymous usage
-statistics. Streamlit reads it when started from the repository root; elsewhere, add
-`--browser.gatherUsageStats false`. The demo is intended for local access only: the same file binds
-the server to `localhost` (when started elsewhere, also pass `--server.address localhost`). Asset
-generation writes only to `demo/assets/` (the path is
-resolved and anything under `experiments/`, `reports/` or `data/`, or outside the project, is
-rejected).
+**Privacy and local-only access.** `.streamlit/config.toml` disables Streamlit's anonymous usage
+statistics. `scripts/run_demo.sh` also binds the server to `localhost` so other devices on your
+network cannot reach it. A plain `streamlit run demo/app.py` does **not** restrict the address (the
+server address is not set in the shared config, so that Community Cloud can host the app); if you
+launch it that way locally, pass `--server.address localhost --browser.gatherUsageStats false`.
+Asset generation writes only to `demo/assets/` (the path is resolved and anything under
+`experiments/`, `reports/` or `data/`, or outside the project, is rejected).
+
+**Public deployment (Streamlit Community Cloud).** Settings: repository
+`aman-18-choudhary/Asymmetric_Auto_Encoder`, branch `feature/demo-streamlit`, main file
+`demo/app.py`, Python 3.11 (Advanced settings). Cloud installs `requirements.txt` (it ranks above
+`pyproject.toml`) and the app adds `src/` to its import path, so no package install is needed. The
+checkpoints and `demo/assets/` are git-ignored, so a hosted copy of this repository shows the
+**Results tab only**; the Reconstruct, Robustness and Latent tabs display a notice and need the
+checkpoints and assets (run the demo locally).
 
 Tabs: **Results** (saved metrics, efficiency, robustness and latent analysis; saved test numbers are
 labelled as the one-time final evaluation), **Reconstruct** (validation samples through all three

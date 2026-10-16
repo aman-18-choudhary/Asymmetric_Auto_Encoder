@@ -1,8 +1,8 @@
-# Local demo settings. Streamlit reads this file when `streamlit run` is started from the
-# repository root. Anonymous usage statistics are disabled so the demo makes no outside calls,
-# and the server binds to localhost so it is not reachable from other devices on the network.
+# Settings shared by local runs and Streamlit Community Cloud. Anonymous usage statistics are
+# disabled (Community Cloud applies its own platform settings regardless).
+#
+# The server address is deliberately NOT set here: forcing `localhost` could stop Community Cloud
+# from serving the app. Local runs stay localhost-only through scripts/run_demo.sh, which passes
+# `--server.address localhost`.
 [browser]
 gatherUsageStats = false
-
-[server]
-address = "localhost"

@@ -1,6 +1,7 @@
-"""Local Streamlit demo. Launch with:  streamlit run demo/app.py   (CPU only, read-only)."""
+"""Streamlit demo (CPU only, read-only). Local launch: scripts/run_demo.sh (localhost only)."""
 
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -10,9 +11,13 @@ import torch
 from matplotlib import colormaps
 from matplotlib.figure import Figure
 
-from asymmetric_autoencoder import demo_support as ds
-
 ROOT = Path(__file__).resolve().parents[1]
+# Streamlit Community Cloud runs this file without pip-installing the project, so make the src/
+# layout importable (harmless locally, where the package is installed in editable mode).
+sys.path.insert(0, str(ROOT / "src"))
+
+from asymmetric_autoencoder import demo_support as ds  # noqa: E402
+
 # Read-only inputs; the environment overrides exist so tests can point at empty directories.
 RESULTS = Path(os.environ.get("AAE_RESULTS_DIR", ROOT / "experiments" / "results"))
 ASSETS = Path(os.environ.get("AAE_ASSETS_DIR", ROOT / "demo" / "assets"))
@@ -48,15 +53,23 @@ def need(loader, what: str, hint: str):
     try:
         return loader()
     except FileNotFoundError as exc:
-        st.info(f"{what} not available: {exc}\n\n{hint}")
+        detail = str(exc.filename or exc).replace(str(ROOT) + os.sep, "")  # no absolute paths
+        st.info(f"{what} not available ({detail}).\n\n{hint}")
         return None
 
 
-BUILD_HINT = "Run `python scripts/build_demo_assets.py` once (inference only)."
+BUILD_HINT = (
+    "Live tabs need the local demo assets, which are not stored in the public repository. "
+    "Locally, build them once (inference only): `python scripts/build_demo_assets.py`."
+)
+CHECKPOINT_HINT = (
+    "The Results tab still works. Live inference needs the three trained checkpoints, which are "
+    "not stored in the public repository; run the demo locally to use this tab (see the README)."
+)
 
 
 def models_or_none():
-    return need(lambda: get_models(str(RESULTS)), "Checkpoints", "Saved-results pages still work.")
+    return need(lambda: get_models(str(RESULTS)), "Checkpoints", CHECKPOINT_HINT)
 
 
 def samples_or_none():

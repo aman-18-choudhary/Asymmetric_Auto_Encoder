@@ -1,0 +1,12 @@
+# Runtime dependencies for the Streamlit demo (demo/app.py), used by Streamlit Community Cloud.
+#
+# Community Cloud ranks requirements.txt above pyproject.toml and only treats pyproject.toml as a
+# Poetry project, so it would not install this setuptools-style project's dependencies. The
+# versions below mirror pyproject.toml ([project].dependencies plus the "demo" extra); a test keeps
+# them in sync. torchvision is intentionally absent: the demo never imports it.
+streamlit>=1.66
+torch>=2.2
+numpy>=1.26
+pyyaml>=6.0
+matplotlib>=3.8
+pandas>=2.0

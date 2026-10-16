@@ -437,16 +437,25 @@ def test_app_runs_with_saved_results_and_real_checkpoints_if_present():
         json.loads((ROOT / "experiments" / "results" / "latent_analysis_val.json").read_text())
 
 
-# ---------------------------------------------------------------- privacy
-def test_streamlit_project_config_disables_statistics_and_binds_to_localhost():
+# ---------------------------------------------------------------- privacy and deployment
+def test_streamlit_project_config_disables_statistics_but_does_not_force_a_bind_address():
     config = ROOT / ".streamlit" / "config.toml"
     text = config.read_text()
     assert "gatherUsageStats = false" in text and "[browser]" in text
-    assert 'address = "localhost"' in text and "[server]" in text
     tomllib = pytest.importorskip("tomllib")  # Python >= 3.11
     parsed = tomllib.loads(text)
     assert parsed["browser"]["gatherUsageStats"] is False
-    assert parsed["server"]["address"] == "localhost"
+    # Forcing `localhost` here could stop Streamlit Community Cloud from serving the app.
+    assert "address" not in parsed.get("server", {})
+
+
+def test_local_launcher_binds_to_localhost_and_disables_statistics():
+    launcher = ROOT / "scripts" / "run_demo.sh"
+    text = launcher.read_text()
+    assert "--server.address localhost" in text
+    assert "--browser.gatherUsageStats false" in text
+    assert "demo/app.py" in text and 'cd "$(dirname "$0")/.."' in text
+    assert launcher.stat().st_mode & 0o111, "launcher must be executable"
 
 
 def test_streamlit_loads_project_config_from_the_repository_root():
@@ -463,5 +472,56 @@ def test_streamlit_loads_project_config_from_the_repository_root():
     ).stdout
     line = next(ln for ln in out.splitlines() if "gatherUsageStats" in ln and "=" in ln)
     assert "false" in line.lower() and not line.lstrip().startswith("#")
-    # Streamlit's effective setting (an uncommented `address = "localhost"` line, set by our file)
-    assert any(ln.strip() == 'address = "localhost"' for ln in out.splitlines())
+    assert not any(ln.strip().startswith("address =") for ln in out.splitlines())  # not forced
+
+
+def _requirement_lines(path: Path) -> set[str]:
+    lines = [ln.split("#")[0].strip() for ln in path.read_text().splitlines()]
+    return {ln.replace(" ", "") for ln in lines if ln}
+
+
+def test_requirements_txt_mirrors_the_pyproject_runtime_dependencies():
+    tomllib = pytest.importorskip("tomllib")
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
+    declared = {d.replace(" ", "") for d in project["dependencies"]}
+    declared |= {d.replace(" ", "") for d in project["optional-dependencies"]["demo"]}
+    required = _requirement_lines(ROOT / "requirements.txt")
+    assert required, "requirements.txt is empty"
+    assert required <= declared, f"not declared in pyproject.toml: {sorted(required - declared)}"
+    names = {r.split(">")[0].split("=")[0].lower() for r in required}
+    assert "torchvision" not in names  # never imported by the demo; keeps the install smaller
+    assert {"streamlit", "torch", "numpy", "pyyaml", "matplotlib", "pandas"} <= names
+    assert not any(r.startswith(("-", "git+", "http")) for r in required)  # plain pins only
+
+
+def test_app_imports_without_the_project_being_pip_installed():
+    """Community Cloud does not pip-install the package, so the app adds src/ to sys.path."""
+    pytest.importorskip("streamlit")
+    import subprocess
+    import sys
+    import textwrap
+
+    code = textwrap.dedent(
+        f"""
+        import importlib.util, sys
+        root = {str(ROOT)!r}
+        sys.path = [p for p in sys.path if not p.rstrip("/").endswith("/src")]
+        sys.meta_path = [f for f in sys.meta_path if "editable" not in repr(f).lower()]
+        sys.modules.pop("asymmetric_autoencoder", None)
+        if importlib.util.find_spec("asymmetric_autoencoder") is not None:
+            print("SKIP: package importable without src/ (regular install)")
+            raise SystemExit(0)
+        from streamlit.testing.v1 import AppTest
+        at = AppTest.from_file(root + "/demo/app.py", default_timeout=120).run()
+        assert not at.exception, at.exception
+        print("OK", len(at.tabs))
+        """
+    )
+    env = {k: v for k, v in __import__("os").environ.items() if k != "PYTHONPATH"}
+    out = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, env=env, timeout=300
+    )
+    assert out.returncode == 0, out.stderr[-800:]
+    if "SKIP" in out.stdout:
+        pytest.skip("package is installed non-editably; cannot simulate a missing install")
+    assert "OK 4" in out.stdout
