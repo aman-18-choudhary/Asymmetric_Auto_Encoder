@@ -4,10 +4,34 @@ A controlled study of whether an asymmetric autoencoder (heavy nonlinear encoder
 bottleneck, lightweight multiscale decoder) learns more compact and noise-robust representations
 than a conventional symmetric convolutional autoencoder under matched training conditions.
 
-> **Status: Phase 4 (shared training infrastructure).** Both models exist and train through one
-> pipeline; no comparison experiments have been performed, so no performance claim is made.
-> The architecture and hypotheses are *proposals*; see
-> [`docs/phase_reports/phase_00_research_blueprint.md`](docs/phase_reports/phase_00_research_blueprint.md).
+## Project status
+
+Final report: **[`reports/final_report.md`](reports/final_report.md)** (per-phase details in
+[`docs/phase_reports/`](docs/phase_reports/)). Phase 9 (final repository audit) is **not** done.
+
+**Completed**
+- Reproducible pipeline: deterministic 45k/5k split, shared `Trainer` with checkpoint/resume, 121 tests.
+- Three models implemented: baseline, parameter-matched baseline, asymmetric autoencoder.
+- One 30-epoch CIFAR-10 training run per model (seed 0), one final test-set evaluation, efficiency
+  measurements, input-noise robustness (validation split) and an inference-only latent analysis.
+
+**Results so far are single-seed evidence** (one training run per model; no variability measured):
+
+| Model | Params | MACs/img | Test MSE | Test PSNR (dB) | Test SSIM | PSNR drop at noise σ=0.3 (val) | Linear-probe acc. (val) |
+|---|---|---|---|---|---|---|---|
+| baseline | 450,627 | 5.4 M | 0.007601 | 21.81 | 0.6496 | 2.25 dB | 37.9% |
+| baseline_matched | 2,812,227 | 52.1 M | 0.007510 | 21.87 | 0.6503 | 2.37 dB | 37.5% |
+| asymmetric | 2,823,625 | 279.9 M | 0.007683 | 21.76 | 0.6318 | 1.75 dB | 37.9% |
+
+The asymmetric model did not beat the baselines on reconstruction or linear-probe accuracy and
+costs several times more compute. Its noise-robustness advantage is only directionally supported
+(H3), not established. No differences here are statistically assessed.
+
+**Incomplete / not done**
+- Seeds 1 and 2 (6 of the 9 planned runs were not completed; Colab results were lost).
+- Latent-dimension sweep: hypothesis **H2 is not fully tested**.
+- Component ablations, denoising training (N2), t-SNE/UMAP, CUDA validation.
+- Phase 9 (final repository audit and presentation preparation).
 
 ## Setup
 
@@ -64,6 +88,12 @@ Starting a run in a directory that already has `last.pt` fails unless `--resume`
 Resume restores model, optimizer, scheduler, history and RNG state and reproduces an
 uninterrupted run exactly on the same device (tested on CPU, verified once on MPS).
 
+**Warning:** the seed-0 result files (configs, histories, summaries, evaluation JSON, logs; not
+checkpoints) are tracked in Git, so retraining with the default run directories overwrites them in
+place (and appends to `train.log`); re-runs are not bit-identical to the committed numbers. Back up
+`experiments/results/` first, or see "Reproducibility" in the final report for writing to a separate
+directory.
+
 Training options (`train:` section): `optimizer` (adam|adamw), `weight_decay`, `scheduler`
 (none|cosine), `early_stopping_patience`, `early_stopping_min_delta`, `output_dir`.
 Not implemented: mixed precision, gradient clipping, multi-GPU.
@@ -73,7 +103,7 @@ Not implemented: mixed precision, gradient clipping, multi-GPU.
 ```bash
 pytest              # run tests
 ruff check .        # lint
-ruff format --check .   # formatting check
+ruff format --check src scripts tests   # formatting check
 ```
 
 Configuration lives in `configs/` (YAML, validated by `asymmetric_autoencoder.config`; unknown
