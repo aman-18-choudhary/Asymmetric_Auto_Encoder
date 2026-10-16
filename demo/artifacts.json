@@ -1,0 +1,36 @@
+{
+  "release": "demo-artifacts-v1",
+  "base_url": "https://github.com/aman-18-choudhary/Asymmetric_Auto_Encoder/releases/download/demo-artifacts-v1",
+  "files": [
+    {
+      "name": "baseline_cifar10_seed0_best.pt",
+      "dest": "experiments/results/baseline_cifar10_seed0/checkpoints/best.pt",
+      "size": 1808947,
+      "sha256": "ff78366aef8f124ae003f94df318932a3263314bc0ac2530237e9b58b12a064c"
+    },
+    {
+      "name": "baseline_matched_cifar10_seed0_best.pt",
+      "dest": "experiments/results/baseline_matched_cifar10_seed0/checkpoints/best.pt",
+      "size": 11255347,
+      "sha256": "808d905efe74565272dec4bdea077c350a93640fe8388f589257004cf929da9d"
+    },
+    {
+      "name": "asymmetric_cifar10_seed0_best.pt",
+      "dest": "experiments/results/asymmetric_cifar10_seed0/checkpoints/best.pt",
+      "size": 11337819,
+      "sha256": "cad23390b206dc941375c804b38c1b4756b76e247e670798a66be7a51f52b8c7"
+    },
+    {
+      "name": "val_samples.npz",
+      "dest": "demo/assets/val_samples.npz",
+      "size": 848356,
+      "sha256": "dffb19b4b7fc661f98ba856aed1ca7db93c974e35549928f362806d6bde4a009"
+    },
+    {
+      "name": "pca_bases.pt",
+      "dest": "demo/assets/pca_bases.pt",
+      "size": 62371,
+      "sha256": "0340f42045252716727bc94a4e4e5c1ec098ebb32865e4578485f8e94e8cdd80"
+    }
+  ]
+}
