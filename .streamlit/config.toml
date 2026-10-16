@@ -1,0 +1,8 @@
+# Local demo settings. Streamlit reads this file when `streamlit run` is started from the
+# repository root. Anonymous usage statistics are disabled so the demo makes no outside calls,
+# and the server binds to localhost so it is not reachable from other devices on the network.
+[browser]
+gatherUsageStats = false
+
+[server]
+address = "localhost"

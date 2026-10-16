@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5", "scikit-image>=0.22"]
+demo = ["streamlit>=1.66", "pandas>=2.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -34,3 +34,6 @@ experiments/results/**/checkpoints/
 .env
 *.pem
 *.key
+
+# Demo assets (generated locally; contain image samples; never committed)
+demo/assets/
