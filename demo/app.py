@@ -11,6 +11,7 @@ import streamlit as st
 import torch
 from matplotlib import colormaps
 from matplotlib.figure import Figure
+from matplotlib.ticker import FuncFormatter, NullFormatter
 
 ROOT = Path(__file__).resolve().parents[1]
 # Streamlit Community Cloud runs this file without pip-installing the project, so make the src/
@@ -182,6 +183,9 @@ def line_chart(series: dict, xlabel: str, ylabel: str, logy: bool = False) -> No
     ax.set_ylabel(ylabel)
     if logy:
         ax.set_yscale("log")
+        # Plain-text tick labels: no mathtext parsing (it raised ValueError on Streamlit Cloud).
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
+        ax.yaxis.set_minor_formatter(NullFormatter())
     ax.grid(alpha=0.3)
     ax.legend(fontsize=8)
     fig.tight_layout()
