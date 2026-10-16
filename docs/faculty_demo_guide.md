@@ -182,6 +182,6 @@ established.
 | `streamlit: command not found` / import errors | Activate `.venv` and run `pip install -e ".[demo]"`. |
 | Port already in use | `scripts/run_demo.sh --server.port 8502`. |
 | Page reachable from other devices, or usage statistics enabled | You launched `streamlit run` directly. Use `scripts/run_demo.sh`, or add `--server.address localhost --browser.gatherUsageStats false`. |
-| A public (Streamlit Community Cloud) copy shows only the Results tab | Expected: the checkpoints and `demo/assets/` are git-ignored and are not in the public repository. Use the local demo for the live tabs. |
+| The public (Streamlit Community Cloud) app says "live-demo files could not be provided" | The app downloads the checkpoints and assets (about 24 MB) from the GitHub release `demo-artifacts-v1` on first use. The release may be unreachable or a file failed its hash check: wait a minute and reload (it retries about every minute); the Results tab is unaffected. Opening the live tabs for the first time after a restart takes a few extra seconds. |
 | Tables empty at first | Wait a few seconds for the first load; refresh the page. |
 | Reset the app | Stop with `Ctrl+C` and start again. |

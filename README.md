@@ -130,9 +130,15 @@ Asset generation writes only to `demo/assets/` (the path is resolved and anythin
 `aman-18-choudhary/Asymmetric_Auto_Encoder`, branch `feature/demo-streamlit`, main file
 `demo/app.py`, Python 3.11 (Advanced settings). Cloud installs `requirements.txt` (it ranks above
 `pyproject.toml`) and the app adds `src/` to its import path, so no package install is needed. The
-checkpoints and `demo/assets/` are git-ignored, so a hosted copy of this repository shows the
-**Results tab only**; the Reconstruct, Robustness and Latent tabs display a notice and need the
-checkpoints and assets (run the demo locally).
+checkpoints and `demo/assets/` are git-ignored, so the hosted app fetches those five files (about
+24 MB) the first time a live tab is opened, from the public GitHub release `demo-artifacts-v1`. They are
+listed with their exact size and SHA-256 in `demo/artifacts.json`; downloads use HTTPS, are checked
+before anything is loaded, never overwrite an existing local file, and need no credentials. If the
+release is unreachable or a file fails verification, the Reconstruct, Robustness and Latent tabs
+explain why and the Results tab keeps working. Locally nothing is downloaded when the files already
+exist. The release publishes the three seed-0 checkpoints and a 300-image CIFAR-10 training-split
+sample, so they are public. To publish new versions, upload the files to a new release tag and update
+`demo/artifacts.json` (names, sizes and `shasum -a 256` hashes).
 
 Tabs: **Results** (saved metrics, efficiency, robustness and latent analysis; saved test numbers are
 labelled as the one-time final evaluation), **Reconstruct** (validation samples through all three

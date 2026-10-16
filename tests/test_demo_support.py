@@ -45,6 +45,12 @@ def models(results_dir):
     return ds.load_models(results_dir)
 
 
+@pytest.fixture(autouse=True)
+def _no_network_downloads(monkeypatch):
+    """The app must not download live-demo files during these tests (see test_demo_artifacts)."""
+    monkeypatch.setenv("AAE_DISABLE_DOWNLOAD", "1")
+
+
 def _x(n=1, seed=0):
     return torch.rand(n, 3, 32, 32, generator=torch.Generator().manual_seed(seed))
 

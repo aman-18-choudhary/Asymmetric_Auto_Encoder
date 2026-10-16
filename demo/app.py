@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -16,16 +17,70 @@ ROOT = Path(__file__).resolve().parents[1]
 # layout importable (harmless locally, where the package is installed in editable mode).
 sys.path.insert(0, str(ROOT / "src"))
 
+from asymmetric_autoencoder import demo_artifacts as da  # noqa: E402
 from asymmetric_autoencoder import demo_support as ds  # noqa: E402
 
 # Read-only inputs; the environment overrides exist so tests can point at empty directories.
 RESULTS = Path(os.environ.get("AAE_RESULTS_DIR", ROOT / "experiments" / "results"))
 ASSETS = Path(os.environ.get("AAE_ASSETS_DIR", ROOT / "demo" / "assets"))
 FIGURES = Path(os.environ.get("AAE_FIGURES_DIR", ROOT / "reports" / "figures"))
+MANIFEST = Path(os.environ.get("AAE_ARTIFACT_MANIFEST", ROOT / "demo" / "artifacts.json"))
+RETRY_SECONDS = 60  # after a failed download, wait this long before trying again
+# The live-demo files (checkpoints, demo assets) are fetched automatically only for the default
+# locations: not when a test or user points the app at custom directories, and never when
+# AAE_DISABLE_DOWNLOAD=1. Existing local files are used as they are and never overwritten.
+AUTO_FETCH = not (
+    os.environ.get("AAE_DISABLE_DOWNLOAD") == "1"
+    or "AAE_RESULTS_DIR" in os.environ
+    or "AAE_ASSETS_DIR" in os.environ
+)
 MODELS = list(ds.MODEL_RUNS)
 SCALE = 6  # nearest-neighbour upscaling of 32x32 images for display
 
 st.set_page_config(page_title="Asymmetric autoencoder demo", layout="wide")
+
+
+@st.cache_resource
+def runtime_root(override: str) -> Path:
+    """Project root when writable (also local development), else a temporary mirror."""
+    return da.prepare_runtime_root(ROOT, override or None)
+
+
+LIVE_ROOT = runtime_root(os.environ.get("AAE_RUNTIME_ROOT", "")) if AUTO_FETCH else None
+LIVE_RESULTS = LIVE_ROOT / "experiments" / "results" if LIVE_ROOT else RESULTS
+LIVE_ASSETS = LIVE_ROOT / "demo" / "assets" if LIVE_ROOT else ASSETS
+
+
+@st.cache_resource(show_spinner="Downloading the live-demo files (about 24 MB, once)...")
+def fetch_live_files(root: str, manifest: str) -> list[str]:
+    """Download missing artifacts (checked by size and SHA-256); raises ArtifactError on failure."""
+    return [str(p) for p in da.ensure_artifacts(da.load_manifest(manifest), Path(root))]
+
+
+def live_ready() -> bool:
+    """True when the live tabs can run; otherwise explain why (once per tab) and return False."""
+    if not AUTO_FETCH:
+        return True  # nothing to fetch; the loaders show their own notices if files are missing
+    error = None
+    if time.time() < st.session_state.get("_live_error_until", 0.0):
+        error = st.session_state["_live_error"]
+    else:
+        try:
+            manifest = da.load_manifest(MANIFEST)
+            if da.missing(manifest, LIVE_ROOT):  # local development: files present, no network
+                fetch_live_files(str(LIVE_ROOT), str(MANIFEST))
+        except da.ArtifactError as exc:
+            error = str(exc)
+            st.session_state["_live_error"] = error
+            st.session_state["_live_error_until"] = time.time() + RETRY_SECONDS
+    if error:
+        st.warning(
+            f"The live-demo files could not be provided: {error}\n\n"
+            "This is usually a temporary network problem; the app tries again about every minute. "
+            "The Results tab is unaffected."
+        )
+        return False
+    return True
 
 
 @st.cache_resource
@@ -59,25 +114,26 @@ def need(loader, what: str, hint: str):
 
 
 BUILD_HINT = (
-    "Live tabs need the local demo assets, which are not stored in the public repository. "
-    "Locally, build them once (inference only): `python scripts/build_demo_assets.py`."
+    "Live tabs need the demo assets: the hosted app downloads them automatically; locally, build "
+    "them once (inference only) with `python scripts/build_demo_assets.py`."
 )
 CHECKPOINT_HINT = (
-    "The Results tab still works. Live inference needs the three trained checkpoints, which are "
-    "not stored in the public repository; run the demo locally to use this tab (see the README)."
+    "The Results tab still works. Live inference needs the three trained checkpoints: the hosted "
+    "app downloads them automatically; locally they come from your own training runs (see the "
+    "README)."
 )
 
 
 def models_or_none():
-    return need(lambda: get_models(str(RESULTS)), "Checkpoints", CHECKPOINT_HINT)
+    return need(lambda: get_models(str(LIVE_RESULTS)), "Checkpoints", CHECKPOINT_HINT)
 
 
 def samples_or_none():
-    return need(lambda: get_samples(str(ASSETS)), "Validation samples", BUILD_HINT)
+    return need(lambda: get_samples(str(LIVE_ASSETS)), "Validation samples", BUILD_HINT)
 
 
 def pca_or_none():
-    return need(lambda: get_pca(str(ASSETS)), "PCA assets", BUILD_HINT)
+    return need(lambda: get_pca(str(LIVE_ASSETS)), "PCA assets", BUILD_HINT)
 
 
 def show(img: np.ndarray, caption: str) -> None:
@@ -229,8 +285,9 @@ with tab_res:
 
 # ------------------------------------------------------------------ Reconstruct
 with tab_rec:
-    models = models_or_none()
-    samples = samples_or_none()
+    ready = live_ready()
+    models = models_or_none() if ready else None
+    samples = samples_or_none() if ready else None
     if models and samples:
         st.caption(
             "**baseline**: small symmetric convolutional autoencoder. **baseline_matched**: the "
@@ -270,8 +327,9 @@ with tab_rob:
         "Here the input is corrupted and every reconstruction is scored against the *clean* "
         "image. This is not evidence of training-based denoising: no model was trained to denoise."
     )
-    models = models_or_none()
-    samples = samples_or_none()
+    ready = live_ready()
+    models = models_or_none() if ready else None
+    samples = samples_or_none() if ready else None
     if models and samples:
         i = pick_sample(samples, "rob")
         kind = st.radio("Corruption", ["gaussian", "salt_pepper"], horizontal=True, key="rob-kind")
@@ -310,9 +368,10 @@ with tab_lat:
         "fitted on **training-set latents only**. Truncation, interpolation and 2-D projections "
         "are exploratory visualisations and are not proof of semantic structure."
     )
-    models = models_or_none()
-    samples = samples_or_none()
-    pca = pca_or_none()
+    ready = live_ready()
+    models = models_or_none() if ready else None
+    samples = samples_or_none() if ready else None
+    pca = pca_or_none() if ready else None
     if models and samples and pca:
         model_name = st.selectbox("Model", MODELS, index=2, key="lat-model")
         model, asset = models[model_name], pca[model_name]
