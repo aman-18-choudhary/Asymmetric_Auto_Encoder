@@ -99,3 +99,68 @@ def robustness_curves(
     ax.set_title(title)
     ax.legend(fontsize=8)
     _save(fig, path)
+
+
+def line_plot(
+    series: dict[str, tuple[list[float], list[float]]],
+    path: str | Path,
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    logy: bool = False,
+) -> None:
+    """Generic multi-series line plot; ``series[name] = (x, y)``."""
+    fig, ax = plt.subplots(figsize=(6, 4))
+    for name, (x, y) in series.items():
+        ax.plot(x, y, marker="o", ms=3, label=name)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    if logy:
+        ax.set_yscale("log")
+    ax.legend(fontsize=8)
+    _save(fig, path)
+
+
+def bar_plot(
+    values: dict[str, float],
+    path: str | Path,
+    title: str,
+    ylabel: str,
+    errors: dict[str, float] | None = None,
+    hline: float | None = None,
+    hline_label: str = "",
+) -> None:
+    fig, ax = plt.subplots(figsize=(7, 4))
+    names = list(values)
+    ax.bar(
+        range(len(names)),
+        [values[n] for n in names],
+        yerr=[errors[n] for n in names] if errors else None,
+        capsize=3,
+        alpha=0.8,
+    )
+    if hline is not None:
+        ax.axhline(hline, color="k", ls="--", lw=1, label=hline_label)
+        ax.legend(fontsize=8)
+    ax.set_xticks(range(len(names)), names, rotation=30, ha="right", fontsize=8)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    _save(fig, path)
+
+
+def latent_scatter(
+    xy: torch.Tensor, labels: torch.Tensor, path: str | Path, title: str, class_names: list[str]
+) -> None:
+    """2-D scatter of projected latents coloured by class (illustrative only)."""
+    fig, ax = plt.subplots(figsize=(6, 5))
+    pts, lab = xy.cpu().numpy(), labels.cpu().numpy()
+    cmap = plt.get_cmap("tab10")
+    for c, name in enumerate(class_names):
+        m = lab == c
+        ax.scatter(pts[m, 0], pts[m, 1], s=4, color=cmap(c), label=name, alpha=0.6)
+    ax.set_xlabel("PC 1")
+    ax.set_ylabel("PC 2")
+    ax.set_title(title, fontsize=9)
+    ax.legend(fontsize=6, markerscale=2, ncol=2)
+    _save(fig, path)
